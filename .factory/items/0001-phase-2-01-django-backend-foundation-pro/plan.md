@@ -265,7 +265,7 @@ commands via the venv — `uv run python manage.py …`, `.venv/bin/tox`. `tox`
   **Test:** from `server/`, run
   `SECRET_KEY=test python manage.py test api -v 2` — the test passes (1 test, OK).
 
-- [ ] **Task 6 — Full tox pass + Render service definition** _(covers acceptance criteria 5, 7)_
+- [x] **Task 6 — Full tox pass + Render service definition** _(covers acceptance criteria 5, 7)_
 
   Run `ruff format .` then `ruff check --fix .` so the format/lint envs pass.
 

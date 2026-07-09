@@ -1,14 +1,19 @@
 services:
   - type: web
-    name: dsc1-question-bank
-    runtime: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    # SPA: serve index.html for any route so client-side state routes don't 404
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    name: dsc1-server
+    runtime: python
+    rootDir: server
+    buildCommand: "pip install -e . && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: DEBUG
+        value: "0"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
     headers:
       - path: /*
         name: X-Frame-Options
