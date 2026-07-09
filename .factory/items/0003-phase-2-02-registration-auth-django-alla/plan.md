@@ -72,7 +72,7 @@ work and `tox` is green, not verbatim transcription.
 
   **Test:** covered by Task 4's `MeEndpointTests`.
 
-- [ ] **Task 3 — Themed auth templates** _(covers acceptance criteria 6)_
+- [x] **Task 3 — Themed auth templates** _(covers acceptance criteria 6)_
 
   Create `server/templates/` and register it:
   `TEMPLATES[0]["DIRS"] = [BASE_DIR / "templates"]` in settings.
