@@ -933,6 +933,16 @@ const styles = {
     marginBottom: 8,
   },
   answerText: { fontSize: 17, lineHeight: 1.5, fontWeight: 600, color: "#eaffcf" },
+  sourceBadge: {
+    display: "inline-block",
+    marginTop: 10,
+    padding: "3px 9px",
+    borderRadius: 999,
+    fontSize: 12,
+    color: "#8ea1c0",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
+  },
   gradeRow: { display: "flex", gap: 10, marginBottom: 26 },
   gradeBtn: {
     flex: 1,
@@ -1204,6 +1214,14 @@ const styles = {
   settingsFields: { display: "flex", gap: 12, marginBottom: 4 },
   settingsField: { flex: 1, display: "block" },
 };
+
+// Subtle provenance pill shown next to a revealed/correct answer. Renders
+// nothing when the question carries no Source value, so it never appears on the
+// question front (where it could hint the answer).
+function SourceBadge({ source }) {
+  if (!source) return null;
+  return <span style={styles.sourceBadge}>Source: {source}</span>;
+}
 
 // Centered themed card used by every shell screen (loading / login / picker).
 function ShellCard({ children }) {
