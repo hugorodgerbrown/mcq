@@ -131,3 +131,10 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   (bundle 310→170 kB). Verified with a live browser walk (login → course → MCQ
   grading). A verify-caught bug (anon stuck on "Loading…", `null` collision) was
   fixed before merge.
+- **2026-07-09 — item 0007 / DSC-6 (course management UI) shipped to `main`** via
+  `auto` merge (merge commit `82395a2`). `POST /api/v1/courses/` (create,
+  owner-scoped); themed `CreateCourse` + `UploadCourse` screens wired into the
+  0006 shell (empty-state/picker → create → upload → two-phase preview/commit →
+  "Study now"). `StudyApp` untouched. Verified with a live browser walk (create →
+  upload demo CSV → import 4 Qs across 2 exams → study; invalid CSV → row errors
+  block import). Follow-up bid-0012: no "New course" entry at exactly 1 course.
