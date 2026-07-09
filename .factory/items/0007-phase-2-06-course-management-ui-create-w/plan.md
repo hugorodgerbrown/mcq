@@ -89,7 +89,7 @@ Builds on 0006 (SPA shell + api client). Do NOT alter `StudyApp`.
 
   **Test:** `npm run build` succeeds (Task 4).
 
-- [ ] **Task 3 — Create + Upload screens in the shell** _(covers acceptance criteria 2, 3, 4)_
+- [x] **Task 3 — Create + Upload screens in the shell** _(covers acceptance criteria 2, 3, 4)_
 
   In `src/App.jsx`, extend the outer `App` shell (NOT `StudyApp`). Add a `view`
   state (`null | "create" | "upload"`) and two themed components using the existing

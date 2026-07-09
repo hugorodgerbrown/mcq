@@ -1,6 +1,13 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 
-import { getCourseContent, getMe, listCourses } from "./api.js";
+import {
+  createCourse,
+  getCourseContent,
+  getMe,
+  importCommit,
+  importPreview,
+  listCourses,
+} from "./api.js";
 
 // Topic colours, cycled by topic index when mapping API content into decks.
 const DECK_PALETTE = [
@@ -1221,6 +1228,130 @@ const styles = {
   scoreChips: { display: "flex", gap: 14, fontWeight: 600 },
   track: { height: 6, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden" },
   fill: { height: "100%", background: "linear-gradient(90deg,#66CCFF,#CCFF66)", transition: "width .3s" },
+
+  // create + upload course screens (shell)
+  fieldWrap: { display: "block", marginBottom: 16 },
+  fieldLabel: {
+    display: "block",
+    fontSize: 12.5,
+    fontWeight: 600,
+    color: "#8ea1c0",
+    marginBottom: 7,
+  },
+  input: {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    color: "#eaf0f9",
+    borderRadius: 12,
+    padding: "12px 14px",
+    fontSize: 14.5,
+    outline: "none",
+    fontFamily: "inherit",
+    transition: "border-color .12s, box-shadow .12s",
+  },
+  textarea: {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    color: "#eaf0f9",
+    borderRadius: 12,
+    padding: "12px 14px",
+    fontSize: 14.5,
+    lineHeight: 1.5,
+    minHeight: 92,
+    resize: "vertical",
+    outline: "none",
+    fontFamily: "inherit",
+    transition: "border-color .12s, box-shadow .12s",
+  },
+  fieldFocus: { borderColor: "#CCFF66", boxShadow: "0 0 0 3px rgba(204,255,102,0.15)" },
+  formError: { color: "#FF6699", fontSize: 13.5, margin: "2px 0 14px", lineHeight: 1.4 },
+  formCancel: {
+    display: "block",
+    width: "100%",
+    background: "none",
+    border: "none",
+    color: "#8ea1c0",
+    fontSize: 13.5,
+    fontWeight: 600,
+    cursor: "pointer",
+    marginTop: 12,
+    outline: "none",
+  },
+  fileBtn: {
+    display: "block",
+    width: "100%",
+    boxSizing: "border-box",
+    textAlign: "center",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px dashed rgba(255,255,255,0.22)",
+    color: "#dbe4f2",
+    borderRadius: 12,
+    padding: "14px 16px",
+    fontSize: 14.5,
+    fontWeight: 600,
+    cursor: "pointer",
+    marginBottom: 16,
+  },
+  summaryWrap: {
+    background: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 14,
+    padding: "10px 12px",
+    marginBottom: 14,
+  },
+  summaryExam: { marginBottom: 6 },
+  summaryExamName: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    color: "#8ea1c0",
+    padding: "6px 2px",
+  },
+  summaryRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "7px 4px",
+    fontSize: 14,
+    color: "#dbe4f2",
+    borderTop: "1px solid rgba(255,255,255,0.05)",
+  },
+  summaryTotals: {
+    fontSize: 12.5,
+    color: "#8ea1c0",
+    fontWeight: 600,
+    padding: "10px 4px 4px",
+    borderTop: "1px solid rgba(255,255,255,0.1)",
+    marginTop: 4,
+  },
+  errorList: {
+    background: "rgba(255,102,153,0.08)",
+    border: "1px solid rgba(255,102,153,0.3)",
+    borderRadius: 12,
+    padding: "10px 12px",
+    marginBottom: 14,
+  },
+  errorRow: {
+    display: "flex",
+    gap: 10,
+    fontSize: 13,
+    color: "#FF6699",
+    padding: "4px 0",
+    lineHeight: 1.4,
+  },
+  errorRowNum: { flexShrink: 0, fontWeight: 700, minWidth: 54 },
+  committedText: {
+    color: "#CCFF66",
+    fontSize: 14.5,
+    fontWeight: 600,
+    lineHeight: 1.5,
+    marginBottom: 16,
+  },
 };
 
 // Centered themed card used by every shell screen (loading / login / picker).
@@ -1232,6 +1363,208 @@ function ShellCard({ children }) {
   );
 }
 
+// Small hook: applies the lime focus ring to a themed field on focus.
+function useFocusStyle(base) {
+  const [focused, setFocused] = useState(false);
+  return {
+    style: focused ? { ...base, ...styles.fieldFocus } : base,
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
+  };
+}
+
+// Create-course screen: name + rubric, POSTs via createCourse, hands the new
+// course back to the shell on success.
+function CreateCourse({ onCreated, onCancel }) {
+  const [name, setName] = useState("");
+  const [rubric, setRubric] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const nameField = useFocusStyle(styles.input);
+  const rubricField = useFocusStyle(styles.textarea);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError("Name is required");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    const course = await createCourse(trimmed, rubric.trim());
+    setBusy(false);
+    if (course) onCreated(course);
+    else setError("Could not create the course. Please try again.");
+  };
+
+  return (
+    <div style={styles.shellCenter}>
+      <form style={{ ...styles.shellCard, textAlign: "left" }} onSubmit={submit}>
+        <div style={styles.eyebrow}>DSC1 · QUESTION BANK</div>
+        <h1 style={styles.shellHeading}>New course</h1>
+        <label style={styles.fieldWrap}>
+          <span style={styles.fieldLabel}>Course name</span>
+          <input
+            {...nameField}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. DSC1 Meat Hygiene"
+            autoFocus
+          />
+        </label>
+        <label style={styles.fieldWrap}>
+          <span style={styles.fieldLabel}>Rubric (optional)</span>
+          <textarea
+            {...rubricField}
+            value={rubric}
+            onChange={(e) => setRubric(e.target.value)}
+            placeholder="Notes about the exam, marking, or scope"
+            rows={4}
+          />
+        </label>
+        {error && <p style={styles.formError}>{error}</p>}
+        <button
+          type="submit"
+          style={{ ...styles.shellCta, width: "100%", opacity: busy ? 0.6 : 1 }}
+          disabled={busy}
+        >
+          {busy ? "Creating…" : "Create"}
+        </button>
+        <button type="button" style={styles.formCancel} onClick={onCancel}>
+          Cancel
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// Upload/import screen for a chosen course: pick a CSV, preview the parsed
+// summary (with row errors), import, then hand off to study.
+function UploadCourse({ course, onDone }) {
+  const [file, setFile] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [committed, setCommitted] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const errors = (summary && summary.errors) || [];
+  const total = summary ? summary.totals.rows : 0;
+
+  const onPick = async (e) => {
+    const picked = e.target.files && e.target.files[0];
+    if (!picked) return;
+    setFile(picked);
+    setSummary(null);
+    setCommitted(null);
+    setError("");
+    setBusy(true);
+    try {
+      setSummary(await importPreview(course.id, picked));
+    } catch {
+      setError("Could not read that file.");
+    }
+    setBusy(false);
+  };
+
+  const doImport = async () => {
+    if (!file || errors.length) return;
+    setBusy(true);
+    setError("");
+    const { ok, data } = await importCommit(course.id, file);
+    setBusy(false);
+    if (ok) setCommitted(data);
+    else setError("Import failed — please check the file and try again.");
+  };
+
+  return (
+    <div style={styles.shellCenter}>
+      <div style={{ ...styles.shellCard, maxWidth: 480, textAlign: "left" }}>
+        <div style={styles.eyebrow}>{course.name}</div>
+        <h1 style={styles.shellHeading}>Upload questions</h1>
+        <p style={{ ...styles.shellText, marginBottom: 18 }}>
+          Choose a CSV to import exams, topics, and questions into this course.
+        </p>
+
+        <label style={styles.fileBtn}>
+          {file ? file.name : "Choose CSV"}
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            style={{ display: "none" }}
+            onChange={onPick}
+          />
+        </label>
+
+        {busy && !committed && <p style={styles.shellText}>Working…</p>}
+
+        {summary && !committed && (
+          <>
+            <div style={styles.summaryWrap}>
+              {summary.exams.map((ex) => (
+                <div key={ex.name} style={styles.summaryExam}>
+                  <div style={styles.summaryExamName}>{ex.name || "(no section)"}</div>
+                  {ex.topics.map((t) => (
+                    <div key={t.name} style={styles.summaryRow}>
+                      <span>{t.name || "(no topic)"}</span>
+                      <span style={styles.deckCount}>{t.questions}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div style={styles.summaryTotals}>
+                {summary.totals.rows} rows · {summary.totals.new} new ·{" "}
+                {summary.totals.updated} updated
+              </div>
+            </div>
+
+            {errors.length > 0 && (
+              <div style={styles.errorList}>
+                {errors.map((er, i) => (
+                  <div key={i} style={styles.errorRow}>
+                    <span style={styles.errorRowNum}>Row {er.row}</span>
+                    <span>{er.message}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              style={{
+                ...styles.shellCta,
+                width: "100%",
+                opacity: errors.length || busy ? 0.5 : 1,
+                cursor: errors.length ? "not-allowed" : "pointer",
+              }}
+              onClick={doImport}
+              disabled={!!errors.length || busy}
+            >
+              {busy ? "Importing…" : `Import ${total} question${total === 1 ? "" : "s"}`}
+            </button>
+          </>
+        )}
+
+        {committed && (
+          <div>
+            <div style={styles.committedText}>
+              Imported {committed.questions_created} new · {committed.questions_updated}{" "}
+              updated across {committed.exams} exam{committed.exams === 1 ? "" : "s"}.
+            </div>
+            <button
+              style={{ ...styles.shellCta, width: "100%" }}
+              onClick={() => onDone(course)}
+            >
+              Study now
+            </button>
+          </div>
+        )}
+
+        {error && <p style={styles.formError}>{error}</p>}
+      </div>
+    </div>
+  );
+}
+
 // Outer shell: gates on auth, picks a course, loads its content from the JSON
 // API, then hands the mapped tracks to the study UI (StudyApp).
 export default function App() {
@@ -1239,6 +1572,7 @@ export default function App() {
   const [courses, setCourses] = useState(null); // null=not loaded yet
   const [course, setCourse] = useState(null); // selected course {id, name, ...}
   const [content, setContent] = useState(null); // loaded course content
+  const [view, setView] = useState(null); // null | "create" | "upload" (shell screens)
 
   useEffect(() => {
     // getMe() resolves to the user object or null (anon/403). Coerce null to
@@ -1295,17 +1629,49 @@ export default function App() {
     );
   }
 
+  // Shell screens (create / upload) take precedence over the picker and study
+  // gates while the user is managing courses. They only apply once authed.
+  if (view === "create") {
+    return (
+      <CreateCourse
+        onCreated={(c) => {
+          setCourse(c);
+          setView("upload");
+          listCourses().then(setCourses);
+        }}
+        onCancel={() => setView(null)}
+      />
+    );
+  }
+
+  if (view === "upload" && course) {
+    return (
+      <UploadCourse
+        course={course}
+        onDone={(c) => {
+          setView(null);
+          // Clone so the content-load effect re-fires and picks up the
+          // freshly imported questions.
+          setCourse({ ...c });
+        }}
+      />
+    );
+  }
+
   if (courses.length === 0) {
     return (
       <ShellCard>
         <div style={styles.eyebrow}>DSC1 · QUESTION BANK</div>
         <h1 style={styles.shellHeading}>No courses yet</h1>
         <p style={styles.shellText}>
-          You don&apos;t have any courses to study. Course creation is coming soon.
+          You don&apos;t have any courses to study. Create your first course to get started.
         </p>
-        <a style={styles.shellCta} href="/accounts/logout/">
+        <button style={styles.shellCta} onClick={() => setView("create")}>
+          Create your first course
+        </button>
+        <button style={styles.formCancel} onClick={() => (window.location.href = "/accounts/logout/")}>
           Log out
-        </a>
+        </button>
       </ShellCard>
     );
   }
@@ -1323,6 +1689,9 @@ export default function App() {
             </button>
           ))}
         </div>
+        <button style={styles.formCancel} onClick={() => setView("create")}>
+          New course
+        </button>
       </ShellCard>
     );
   }
