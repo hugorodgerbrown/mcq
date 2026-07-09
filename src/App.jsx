@@ -1241,7 +1241,9 @@ export default function App() {
   const [content, setContent] = useState(null); // loaded course content
 
   useEffect(() => {
-    getMe().then(setAuth);
+    // getMe() resolves to the user object or null (anon/403). Coerce null to
+    // false so it doesn't collide with the `null` loading sentinel above.
+    getMe().then((user) => setAuth(user || false));
   }, []);
 
   useEffect(() => {
