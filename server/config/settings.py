@@ -40,8 +40,13 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
 ]
+
+# Clickjacking protection (was an X-Frame-Options header on the old static site;
+# Render only allows response headers on static services, so it lives here now).
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 SITE_ID = 1
 
