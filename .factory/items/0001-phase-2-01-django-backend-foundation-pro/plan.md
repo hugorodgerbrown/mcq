@@ -111,7 +111,7 @@ commands via the venv — `uv run python manage.py …`, `.venv/bin/tox`. `tox`
 
   **Test:** from `server/`, `python -c "import tomllib,pathlib; tomllib.loads(pathlib.Path('pyproject.toml').read_text())"` exits 0 (valid TOML). Full check deferred to Task 6's `tox`.
 
-- [ ] **Task 2 — Environment-driven settings + database resolution** _(covers acceptance criteria 2, 3)_
+- [x] **Task 2 — Environment-driven settings + database resolution** _(covers acceptance criteria 2, 3)_
 
   Create `server/config/settings.py`:
 
@@ -180,7 +180,7 @@ commands via the venv — `uv run python manage.py …`, `.venv/bin/tox`. `tox`
   `python manage.py check` — must exit 0 (acceptance 1). Command:
   `SECRET_KEY=test python manage.py check`.
 
-- [ ] **Task 3 — API app, health endpoint, JSON error shape** _(covers acceptance criteria 4)_
+- [x] **Task 3 — API app, health endpoint, JSON error shape** _(covers acceptance criteria 4)_
 
   Create `server/api/__init__.py` (empty), `server/api/apps.py`:
 
@@ -229,7 +229,7 @@ commands via the venv — `uv run python manage.py …`, `.venv/bin/tox`. `tox`
 
   **Test:** deferred to Task 5 (full URL wiring) and Task 6 (`tox`).
 
-- [ ] **Task 4 — Root URLconf: versioned API + SPA fallback** _(covers acceptance criteria 4, criteria 6 by not touching SPA)_
+- [x] **Task 4 — Root URLconf: versioned API + SPA fallback** _(covers acceptance criteria 4, criteria 6 by not touching SPA)_
 
   Create `server/config/urls.py`:
 
