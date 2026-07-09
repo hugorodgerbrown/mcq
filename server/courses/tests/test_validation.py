@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 
-from courses.importer import RowError, validate_rows
+from courses.importer import validate_rows
 from courses.models import Course, Question
 
 H = ["Section", "Category", "Code", "Question", "A", "B", "C", "D", "Correct"]

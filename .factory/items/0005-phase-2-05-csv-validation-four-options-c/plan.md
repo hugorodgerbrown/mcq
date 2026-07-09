@@ -121,7 +121,7 @@ importer or API changes — the preview/commit flow already calls `validate_rows
   `SECRET_KEY=test uv run python manage.py test courses.tests.test_validation -v 2`
   → 6 tests pass.
 
-- [ ] **Task 3 — Full tox green + scope guard** _(covers acceptance criteria 6)_
+- [x] **Task 3 — Full tox green + scope guard** _(covers acceptance criteria 6)_
 
   `uv run ruff format .`, `uv run ruff check --fix .`, fix mypy issues.
 

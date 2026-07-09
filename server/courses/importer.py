@@ -42,7 +42,9 @@ def validate_rows(rows: list[dict]) -> list[RowError]:
         if not code:
             errors.append(RowError(i, "Code is required"))
         elif code in first_seen:
-            errors.append(RowError(i, f"duplicate Code '{code}' (first seen row {first_seen[code]})"))
+            errors.append(
+                RowError(i, f"duplicate Code '{code}' (first seen row {first_seen[code]})")
+            )
         else:
             first_seen[code] = i
 
