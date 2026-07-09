@@ -78,6 +78,15 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   without JS, while the study app stays the deliberately JS-first SPA per
   #Decisions-surfaced).
 
+## Phase 2 frontend approach
+
+- **2026-07-09 — SPA refactored in place, not rebuilt (owner decision).** The
+  existing `src/App.jsx` study UI (home, MCQ, flashcard, exam, results; the dark
+  design system) is kept. Item 0006 wraps it in an auth + course-selection shell
+  and swaps the hard-coded `QUESTIONS`/`MEAT_QUESTIONS`/`TRACKS` arrays for data
+  fetched from the JSON API; later frontend items build on that. Frontend items
+  are verified in a real browser (Chrome tools), not just tests.
+
 ## Phase 2 ship log
 
 - **2026-07-09 — item 0001 / DSC-1 (Django backend foundation) shipped to `main`**
@@ -113,3 +122,12 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   references first-seen row), `{row,message}` errors that block commit (400, no
   write). Item 0004 tests still green. **Backend half of Phase 2 complete
   (items 0001–0005).**
+- **2026-07-09 — item 0006 / DSC-9 (SPA ↔ API integration) shipped to `main`** via
+  `auto` merge (merge commit `08df8cb`). Read API (`GET /api/v1/courses/`,
+  `…/<id>/content/` nested exams→topics→questions, owner-scoped); Django serves the
+  Vite-built SPA single-origin (`base:/static/`, `spa_dist`, `spa_index` catch-all
+  with `@ensure_csrf_cookie`); `App.jsx` refactored in place — `StudyApp` +
+  `contentToTracks` mapper + auth/course shell, bundled question data removed
+  (bundle 310→170 kB). Verified with a live browser walk (login → course → MCQ
+  grading). A verify-caught bug (anon stuck on "Loading…", `null` collision) was
+  fixed before merge.
