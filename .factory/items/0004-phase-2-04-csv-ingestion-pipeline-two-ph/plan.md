@@ -131,7 +131,7 @@ unchanged (uv + tox, Python 3.12); run via `uv run …` / `.venv/bin/…` from
 
   **Test:** covered by Task 3.
 
-- [ ] **Task 2 — API views + URLs** _(covers acceptance criteria 5)_
+- [x] **Task 2 — API views + URLs** _(covers acceptance criteria 5)_
 
   Create `server/courses/api_views.py`:
 
