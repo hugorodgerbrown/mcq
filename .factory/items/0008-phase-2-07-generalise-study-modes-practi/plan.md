@@ -62,7 +62,7 @@ the quoted code.
   **Test:** `npm run build` succeeds with no unresolved references / unused-var
   errors.
 
-- [ ] **Task 3 — Build + scope** _(covers acceptance criteria 5, 6)_
+- [x] **Task 3 — Build + scope** _(covers acceptance criteria 5, 6)_
 
   `npm run build` exit 0. Backend untouched — but run `.venv/bin/tox` from
   `server/` to confirm still green (no backend change expected). Scope: `git diff
