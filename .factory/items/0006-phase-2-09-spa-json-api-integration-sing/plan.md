@@ -266,7 +266,7 @@ Refactor `src/App.jsx` **in place** — keep the study UI, swap the data source.
   **Test:** `npm run build` succeeds (no unresolved refs to the removed
   constants). Browser verification in the verify stage.
 
-- [ ] **Task 4 — tox green + build + scope** _(covers acceptance criteria 7)_
+- [x] **Task 4 — tox green + build + scope** _(covers acceptance criteria 7)_
 
   Backend: `uv run ruff format .`, `uv run ruff check --fix .`, fix mypy;
   `.venv/bin/tox` green. Frontend: `npm run build` succeeds.
