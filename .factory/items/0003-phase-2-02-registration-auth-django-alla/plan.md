@@ -54,7 +54,7 @@ work and `tox` is green, not verbatim transcription.
   **Test:** `SECRET_KEY=test uv run python manage.py check` exits 0; `migrate`
   creates allauth `account_*` and `django_site` tables (acceptance 1).
 
-- [ ] **Task 2 — URLs + `/api/v1/me/` endpoint** _(covers acceptance criteria 5)_
+- [x] **Task 2 — URLs + `/api/v1/me/` endpoint** _(covers acceptance criteria 5)_
 
   In `server/config/urls.py` add `path("accounts/", include("allauth.urls"))`.
 
