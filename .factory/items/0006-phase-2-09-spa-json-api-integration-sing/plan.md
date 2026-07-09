@@ -194,7 +194,7 @@ Refactor `src/App.jsx` **in place** — keep the study UI, swap the data source.
   `SECRET_KEY=test DEBUG=1 uv run python manage.py collectstatic --noinput` and a
   Django check pass. (Browser serving verified in the verify stage.)
 
-- [ ] **Task 3 — SPA api client + auth/course shell** _(covers acceptance criteria 4, 5, 6)_
+- [x] **Task 3 — SPA api client + auth/course shell** _(covers acceptance criteria 4, 5, 6)_
 
   Create `src/api.js`:
 
