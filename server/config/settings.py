@@ -13,6 +13,11 @@ SECRET_KEY = (
 )
 DEBUG = os.environ.get("DEBUG", "1") == "1"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+# Render provides the service's public hostname here; trust it automatically so a
+# fresh deploy works without a manual ALLOWED_HOSTS value.
+_render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if _render_host:
+    ALLOWED_HOSTS.append(_render_host)
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",

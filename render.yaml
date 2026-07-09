@@ -1,8 +1,18 @@
+# Render blueprint — full Django web service + managed Postgres, single origin.
+# The web service builds the React SPA, collects it as static, runs migrations,
+# and serves it via gunicorn; DATABASE_URL is wired to the managed Postgres below.
+databases:
+  - name: mcq-db
+    databaseName: mcq
+    user: mcq
+    plan: free # Render free Postgres expires ~30 days — move to a paid plan for production
+
 services:
   - type: web
-    name: dsc1-server
+    name: mcq
     runtime: python
-    rootDir: server
+    rootDir: server # Python version comes from server/.python-version (3.12)
+    plan: free # free web services sleep after inactivity — bump for production
     buildCommand: "cd .. && npm install && npm run build && cd server && pip install -e . && python manage.py collectstatic --noinput && python manage.py migrate"
     startCommand: "gunicorn config.wsgi:application"
     envVars:
@@ -10,10 +20,16 @@ services:
         value: "0"
       - key: SECRET_KEY
         generateValue: true
+      # Set to your Render hostname, e.g. mcq.onrender.com (comma-separated for several).
       - key: ALLOWED_HOSTS
         sync: false
+      # Wired to the managed Postgres above — no manual value needed.
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: mcq-db
+          property: connectionString
+      # Email (django-allauth verification / password reset). Provide these to send
+      # real mail; until then production has no SMTP host and sends nothing.
       - key: EMAIL_HOST
         sync: false
       - key: EMAIL_PORT
