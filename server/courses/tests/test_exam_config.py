@@ -19,9 +19,7 @@ class ExamConfigTests(APITestCase):
 
     def test_owner_updates(self):
         self.client.force_login(self.owner)
-        resp = self.client.patch(
-            self._url(), {"exam_size": 30, "pass_mark": 60}, format="json"
-        )
+        resp = self.client.patch(self._url(), {"exam_size": 30, "pass_mark": 60}, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["pass_mark"], 60)
         self.exam.refresh_from_db()
@@ -30,31 +28,23 @@ class ExamConfigTests(APITestCase):
 
     def test_anon_and_non_owner_forbidden(self):
         self.assertEqual(
-            self.client.patch(
-                self._url(), {"pass_mark": 50}, format="json"
-            ).status_code,
+            self.client.patch(self._url(), {"pass_mark": 50}, format="json").status_code,
             403,
         )
         self.client.force_login(self.other)
         self.assertEqual(
-            self.client.patch(
-                self._url(), {"pass_mark": 50}, format="json"
-            ).status_code,
+            self.client.patch(self._url(), {"pass_mark": 50}, format="json").status_code,
             403,
         )
 
     def test_invalid_values(self):
         self.client.force_login(self.owner)
         self.assertEqual(
-            self.client.patch(
-                self._url(), {"exam_size": 0}, format="json"
-            ).status_code,
+            self.client.patch(self._url(), {"exam_size": 0}, format="json").status_code,
             400,
         )
         self.assertEqual(
-            self.client.patch(
-                self._url(), {"pass_mark": 150}, format="json"
-            ).status_code,
+            self.client.patch(self._url(), {"pass_mark": 150}, format="json").status_code,
             400,
         )
         self.exam.refresh_from_db()

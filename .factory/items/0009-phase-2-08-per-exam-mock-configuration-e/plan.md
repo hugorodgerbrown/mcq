@@ -120,7 +120,7 @@ Backend `server/` (uv+tox; `SECRET_KEY=test`). Frontend `src/App.jsx`/`src/api.j
 
   **Test:** `npm run build`; browser walk in verify.
 
-- [ ] **Task 3 — tox + build + scope** _(covers acceptance criteria 5, 6)_
+- [x] **Task 3 — tox + build + scope** _(covers acceptance criteria 5, 6)_
 
   Backend `uv run ruff format .`, `ruff check --fix .`, fix mypy; `.venv/bin/tox`
   green. Frontend `npm run build` exit 0.
