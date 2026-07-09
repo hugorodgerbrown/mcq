@@ -50,3 +50,11 @@ export async function importCommit(courseId, file) {
   });
   return { ok: res.ok, data: await res.json() };
 }
+export async function updateExam(courseId, examId, exam_size, pass_mark) {
+  const res = await req(`/api/v1/courses/${courseId}/exams/${examId}/`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ exam_size, pass_mark }),
+  });
+  return { ok: res.ok, data: await res.json() };
+}
