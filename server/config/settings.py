@@ -79,9 +79,10 @@ DATABASES = {
     )
 }
 
-# Single-origin static serving of the built SPA bundle (dist/).
+# Single-origin static serving of the built SPA bundle (spa_dist/).
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "spa_dist"] if (BASE_DIR / "spa_dist").exists() else []
 STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

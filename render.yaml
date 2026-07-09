@@ -3,7 +3,7 @@ services:
     name: dsc1-server
     runtime: python
     rootDir: server
-    buildCommand: "pip install -e . && python manage.py collectstatic --noinput && python manage.py migrate"
+    buildCommand: "cd .. && npm install && npm run build && cd server && pip install -e . && python manage.py collectstatic --noinput && python manage.py migrate"
     startCommand: "gunicorn config.wsgi:application"
     envVars:
       - key: DEBUG

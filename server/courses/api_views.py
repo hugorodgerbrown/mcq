@@ -8,11 +8,28 @@ from rest_framework.response import Response
 
 from . import importer
 from .models import Course
+from .serializers import CourseContentSerializer, CourseListSerializer
 
 
 def _owned_course(request: Request, pk: int) -> Course | None:
     course = get_object_or_404(Course, pk=pk)
     return course if course.owner_id == request.user.id else None
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def course_list(request: Request) -> Response:
+    courses = Course.objects.filter(owner=request.user).order_by("name")
+    return Response(CourseListSerializer(courses, many=True).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def course_content(request: Request, pk: int) -> Response:
+    course = _owned_course(request, pk)
+    if course is None:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    return Response(CourseContentSerializer(course).data)
 
 
 @api_view(["POST"])

@@ -1,5 +1,7 @@
 node_modules/
 dist/
+server/spa_dist/
+server/staticfiles/
 
 # Factory run-local state — transient per-run transcripts and append-only
 # ledgers. The durable brain (docs/factory/), config.json, and items/ stay
