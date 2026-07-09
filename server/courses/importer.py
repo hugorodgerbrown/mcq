@@ -34,14 +34,29 @@ def _read_rows(file) -> tuple[list[dict], list[RowError]]:
 
 
 def validate_rows(rows: list[dict]) -> list[RowError]:
-    # Structural validation only; item 0005 hardens (options non-empty,
-    # Correct resolves, Code unique in file). Row numbers: header=1, first data=2.
+    # Phase-one validation. Row numbers: header = 1, first data row = 2.
     errors: list[RowError] = []
+    first_seen: dict[str, int] = {}
     for i, row in enumerate(rows, start=2):
-        if not (row.get("Code") or "").strip():
+        code = (row.get("Code") or "").strip()
+        if not code:
             errors.append(RowError(i, "Code is required"))
+        elif code in first_seen:
+            errors.append(RowError(i, f"duplicate Code '{code}' (first seen row {first_seen[code]})"))
+        else:
+            first_seen[code] = i
+
         if not (row.get("Question") or "").strip():
             errors.append(RowError(i, "Question text is required"))
+
+        for letter in ("A", "B", "C", "D"):
+            if not (row.get(letter) or "").strip():
+                errors.append(RowError(i, f"option {letter} is empty"))
+
+        correct = (row.get("Correct") or "").strip().upper()
+        if correct not in ("A", "B", "C", "D"):
+            shown = (row.get("Correct") or "").strip()
+            errors.append(RowError(i, f"Correct '{shown}' is not one of A, B, C, D"))
     return errors
 
 
