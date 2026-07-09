@@ -57,7 +57,7 @@ Builds on 0006 (SPA shell + api client). Do NOT alter `StudyApp`.
   **Test:** `SECRET_KEY=test uv run python manage.py test courses -v 2` → all pass
   (existing + 3 new).
 
-- [ ] **Task 2 — API client additions** _(covers acceptance criteria 2, 3, 4)_
+- [x] **Task 2 — API client additions** _(covers acceptance criteria 2, 3, 4)_
 
   In `src/api.js` add:
 
