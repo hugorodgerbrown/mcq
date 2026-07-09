@@ -2,3 +2,14 @@
 {"data": {"priority": 8}, "event": "priority.set", "ts": "2026-07-09T13:41:41Z"}
 {"data": {"from": "idea", "reason": "Batch roadmap: owner-approved, priority+triage.md set", "to": "triage"}, "event": "stage.advance", "ts": "2026-07-09T13:43:11Z"}
 {"data": {"from": "triage", "reason": "Batch roadmap: exit triage to spec", "to": "spec"}, "event": "stage.advance", "ts": "2026-07-09T13:43:11Z"}
+{"data": {"from": "spec", "reason": "spec.md; ui -> design", "to": "design"}, "event": "stage.advance", "ts": "2026-07-09T21:26:06Z"}
+{"data": {"from": "design", "reason": "minimal design (reuse existing UI); ui -> plan", "to": "plan"}, "event": "stage.advance", "ts": "2026-07-09T21:26:06Z"}
+{"data": {"from": "plan", "reason": "plan.md with 3 checkbox tasks", "to": "implement"}, "event": "stage.advance", "ts": "2026-07-09T21:26:45Z"}
+{"data": {"tasks": 3, "tests": "npm build ok; tox 28 green; grep-clean"}, "event": "implement.completed", "ts": "2026-07-09T21:33:25Z"}
+{"data": {"from": "implement", "reason": "3 tasks, build+tox green", "to": "review"}, "event": "stage.advance", "ts": "2026-07-09T21:33:25Z"}
+{"event": "review.approved", "ts": "2026-07-09T21:33:49Z"}
+{"data": {"from": "review", "reason": "review clean; browser verify", "to": "verify"}, "event": "stage.advance", "ts": "2026-07-09T21:33:49Z"}
+{"data": {"criteria": "6/6", "tests": "npm build + tox 28 + browser walk all 3 modes; short-deck pass verified"}, "event": "verify.green", "ts": "2026-07-09T21:38:24Z"}
+{"data": {"from": "verify", "reason": "6/6 verified incl browser walk", "to": "ship"}, "event": "stage.advance", "ts": "2026-07-09T21:38:24Z"}
+{"data": {"mode": "auto", "ref": "70040392dda5e8b9ddaa9c193945f276d85f692c"}, "event": "ship.merged", "ts": "2026-07-09T21:38:24Z"}
+{"data": {"from": "ship", "reason": "merged 70040392dda5e8b9ddaa9c193945f276d85f692c", "to": "done"}, "event": "stage.advance", "ts": "2026-07-09T21:38:24Z"}

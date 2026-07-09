@@ -138,3 +138,9 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   "Study now"). `StudyApp` untouched. Verified with a live browser walk (create →
   upload demo CSV → import 4 Qs across 2 exams → study; invalid CSV → row errors
   block import). Follow-up bid-0012: no "New course" entry at exactly 1 course.
+- **2026-07-09 — item 0008 / DSC-7 (generalise study modes) shipped to `main`** via
+  `auto` merge. Mock now shows the exam's real `pass_mark` %; short-deck scaling
+  `passNeeded = max(1, round(pass_mark%/100 × drawn))`; removed dead
+  unanswered/unverified affordances (API always has real answers). Frontend-only.
+  Verified live: Practice, Flashcard (reveal→grade), and a short-deck Mock
+  (3 drawn / need 2, "Pass mark 80% — 2 / 3 (short deck)").
