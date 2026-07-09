@@ -149,3 +149,8 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   exam_size≥1 / pass_mark 1–100); themed Exam settings screen reached from the study
   top bar; on save the content reloads so the mock uses the new values. Verified
   live: 80%→60% and size 5→4 reflected in the mock intro.
+- **2026-07-09 — item 0010 / DSC-10 (answer provenance) shipped to `main`** via
+  `auto` merge. Frontend-only `SourceBadge` ("Source: <value>") shown next to
+  revealed answers in Practice, Flashcard, and Mock review — answer-side only, never
+  on the question front (no early hint); no badge when `source` empty. Live-verified
+  in Practice ("Source: DMQ").
