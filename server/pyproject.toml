@@ -9,6 +9,7 @@ dependencies = [
     "whitenoise>=6.7",
     "gunicorn>=23.0",
     "psycopg[binary]>=3.2",
+    "django-allauth>=65,<66",
 ]
 
 [project.optional-dependencies]
