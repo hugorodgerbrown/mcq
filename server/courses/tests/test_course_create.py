@@ -6,9 +6,7 @@ from courses.models import Course
 
 class CourseCreateTests(APITestCase):
     def setUp(self):
-        self.u = get_user_model().objects.create_user(
-            "o", email="o@x.com", password="pw12345678"
-        )
+        self.u = get_user_model().objects.create_user("o", email="o@x.com", password="pw12345678")
 
     def test_anonymous_cannot_create(self):
         self.assertEqual(self.client.post("/api/v1/courses/", {"name": "X"}).status_code, 403)

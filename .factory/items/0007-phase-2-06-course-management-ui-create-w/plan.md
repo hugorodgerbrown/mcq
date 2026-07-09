@@ -123,7 +123,7 @@ Builds on 0006 (SPA shell + api client). Do NOT alter `StudyApp`.
   **Test:** `npm run build` succeeds with no unresolved references (Task 4);
   browser walk in verify.
 
-- [ ] **Task 4 — tox green + build + scope** _(covers acceptance criteria 5, 6)_
+- [x] **Task 4 — tox green + build + scope** _(covers acceptance criteria 5, 6)_
 
   Backend: `uv run ruff format .`, `uv run ruff check --fix .`, fix mypy;
   `.venv/bin/tox` green. Frontend: `npm run build` exit 0.
