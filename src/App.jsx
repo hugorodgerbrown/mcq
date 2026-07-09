@@ -24,9 +24,6 @@ const DECK_PALETTE = [
   "#E86AB8",
 ];
 
-// A question is answerable only once its correct option is a real letter.
-const hasAnswer = (qq) => !!qq && qq.correct !== "?" && !!qq.correct;
-
 // Map the JSON API course content into the study UI's per-exam track shape.
 // Each exam becomes a self-contained track: its own questions, topic decks, and
 // mock-exam parameters (examPass derived from the exam's percentage pass mark).
@@ -69,6 +66,7 @@ function contentToTracks(content) {
       speciesCats: new Set(),
       examSize: exam.exam_size,
       examPass: Math.round((exam.pass_mark / 100) * exam.exam_size),
+      passMarkPct: exam.pass_mark,
     };
   }
   return { tracks, trackKeys };
@@ -107,18 +105,7 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
   const activeDecks = activeTrack.decks;
   const speciesCats = activeTrack.speciesCats;
   const EXAM_SIZE = activeTrack.examSize;
-  const EXAM_PASS = activeTrack.examPass;
-  // Per-question answer availability. Unanswered questions (correct "?") are
-  // shown but their answers are disabled and labelled; answered ones play fully.
-  const answeredCounts = useMemo(() => {
-    const c = {};
-    for (const qq of activeQuestions) if (hasAnswer(qq)) c[qq.cat] = (c[qq.cat] || 0) + 1;
-    return c;
-  }, [activeQuestions]);
-  const unansweredTotal = useMemo(
-    () => activeQuestions.filter((qq) => !hasAnswer(qq)).length,
-    [activeQuestions]
-  );
+  const PASS_PCT = activeTrack.passMarkPct;
 
   const byId = useMemo(
     () => Object.fromEntries(activeQuestions.map((q) => [q.id, q])),
@@ -148,8 +135,6 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
       if (d === "ALL") qs = activeQuestions;
       else if (d === "ALL_SPECIES") qs = activeQuestions.filter((q) => speciesCats.has(q.cat));
       else qs = activeQuestions.filter((q) => q.cat === d);
-      // Mock exam only draws from answered questions (unanswered can't be scored).
-      if (mode === "exam") qs = qs.filter(hasAnswer);
       let shuffled = shuffle(qs.map((q) => q.id));
       if (mode === "exam") shuffled = shuffled.slice(0, EXAM_SIZE);
       setDeck(d);
@@ -167,8 +152,6 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
   );
 
   const q = byId[order[pos]];
-  // Unanswered question: shown but answering is disabled (no key yet).
-  const qLocked = !!q && !hasAnswer(q);
 
   // Stable per-question option order — shuffled once per deck session so it
   // doesn't reshuffle when you navigate back and forth in the exam.
@@ -189,7 +172,6 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
   const choose = useCallback(
     (letter, e) => {
       if (e && e.currentTarget) e.currentTarget.blur();
-      if (qLocked) return; // unanswered question — answering disabled
       if (solved) return; // once solved, options are locked
       if (wrong.includes(letter)) return; // already-tried wrong option
       setTries((t) => t + 1);
@@ -265,9 +247,11 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
       if (picked !== qq.correct) review.push({ q: qq, picked });
     }
     const total = order.length;
-    const passNeeded = Math.min(EXAM_PASS, total); // scale if deck < exam size
+    // Scale the pass threshold by the exam's percentage: an 80% exam on a
+    // 10-question pool needs 8, not the nominal count. At least 1 to pass.
+    const passNeeded = Math.max(1, Math.round((PASS_PCT / 100) * total));
     return { score, total, passNeeded, passed: score >= passNeeded, byCat, review };
-  }, [mode, order, examAnswers, byId, EXAM_PASS]);
+  }, [mode, order, examAnswers, byId, PASS_PCT]);
 
   const correct = hits;
 
@@ -342,23 +326,16 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
             </button>
           </div>
 
-          {mode === "exam" ? (
+          {mode === "exam" && (
             <p style={styles.examNote}>
-              {EXAM_SIZE} questions across all topics. No feedback until the end. Pass mark 80% ({EXAM_PASS}/{EXAM_SIZE}).
+              {EXAM_SIZE} questions across all topics. No feedback until the end. Pass mark {PASS_PCT}%.
             </p>
-          ) : unansweredTotal > 0 ? (
-            <p style={styles.pendingNote}>
-              ⚠ {unansweredTotal} question{unansweredTotal === 1 ? "" : "s"} have no answer key yet. They are shown and labelled, but can't be answered — mock exam skips them.
-            </p>
-          ) : null}
+          )}
 
           <div style={{ ...styles.divider, marginTop: 22 }}>QUESTION BANKS</div>
 
           <button style={{ ...styles.deckRow, ...styles.deckAll }} onClick={() => startDeck("ALL")}>
-            <span style={styles.deckName}>
-              Everything
-              {unansweredTotal > 0 && <span style={styles.pendingBadge}>{unansweredTotal} unanswered</span>}
-            </span>
+            <span style={styles.deckName}>Everything</span>
             <span style={styles.deckCount}>{activeQuestions.length}</span>
           </button>
           {speciesCats.size > 0 && (
@@ -381,9 +358,6 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
               <span style={styles.deckName}>
                 <span style={{ ...styles.deckDot, background: d.color }} />
                 {d.short}
-                {(counts[d.cat] || 0) - (answeredCounts[d.cat] || 0) > 0 && (
-                  <span style={styles.pendingBadge}>answers pending</span>
-                )}
               </span>
               <span style={styles.deckCount}>{counts[d.cat] || 0}</span>
             </button>
@@ -429,7 +403,7 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
             </div>
             <div style={styles.resultPct}>{pct}%</div>
             <div style={styles.resultThreshold}>
-              Pass mark {passNeeded} / {total}
+              Pass mark {PASS_PCT}% — {passNeeded} / {total}
               {total < EXAM_SIZE ? " (short deck)" : ""}
             </div>
           </div>
@@ -463,10 +437,7 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
               <div style={styles.breakdownTitle}>REVIEW — {review.length} INCORRECT</div>
               {review.map(({ q: rq, picked }) => (
                 <div key={rq.id} style={styles.reviewItem}>
-                  <div style={styles.reviewQ}>
-                    {rq.q}
-                    {rq.conf === "Medium" && <span style={styles.unverifiedBadge}>unverified</span>}
-                  </div>
+                  <div style={styles.reviewQ}>{rq.q}</div>
                   <div style={{ ...styles.reviewLine, ...styles.reviewWrong }}>
                     <span style={styles.reviewLbl}>Your answer</span>
                     <span>{picked ? `${picked}. ${rq[picked]}` : "Not answered"}</span>
@@ -486,81 +457,6 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
           <button style={{ ...styles.backBtn, width: "100%", padding: "13px 0", fontSize: 14 }} onClick={() => setDeck(null)}>
             Back to decks
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── LOCKED QUESTION (no answer key yet) ────────────────────────────────────
-  // The current question is unanswered: show it read-only, labelled, answers
-  // disabled. Answered questions in the same deck fall through to the quiz below.
-  if (qLocked) {
-    return (
-      <div style={styles.root}>
-        <div style={styles.wrap}>
-          <header style={styles.header}>
-            <button style={styles.backBtn} onClick={() => setDeck(null)}>
-              ‹ Decks
-            </button>
-            <div style={styles.deckTag}>
-              <span style={{ ...styles.deckDot, background: deckColor }} />
-              {activeTrack.label} · {deckLabel}
-            </div>
-            <button style={styles.ghostBtn} onClick={() => startDeck(deck)}>
-              ↻
-            </button>
-          </header>
-
-          {q ? (
-            <>
-              <div style={{ ...styles.card, borderTop: `3px solid ${deckColor}` }}>
-                <div style={styles.cardLabel}>
-                  <span style={{ color: colorFor[q.cat] || "#fff" }}>
-                    {(activeDecks.find((d) => d.cat === q.cat) || {}).short || q.cat}
-                    {q.code ? ` · ${q.code}` : ""}
-                  </span>
-                  <span style={styles.qNum}>
-                    {pos + 1} / {order.length}
-                  </span>
-                </div>
-                <p style={styles.question}>{q.q}</p>
-                <div style={styles.options}>
-                  {LETTERS.map((letter) => (
-                    <div key={letter} style={styles.refOption}>
-                      <span style={styles.refLetter}>{letter}</span>
-                      <span>{q[letter]}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={styles.noteBox}>
-                  ⚠ Unanswered — there is no answer key for this question yet, so
-                  answering is disabled. It is excluded from the mock exam.
-                </div>
-              </div>
-              <button style={styles.nextBtn} onClick={next}>
-                Next question →
-              </button>
-            </>
-          ) : (
-            <div style={styles.empty}>No questions.</div>
-          )}
-
-          <footer style={styles.footer}>
-            <div style={styles.progressRow}>
-              <span>
-                Question {pos + 1} of {order.length}
-              </span>
-              <span style={{ opacity: 0.6 }}>unanswered</span>
-            </div>
-            <div style={styles.track}>
-              <div
-                style={{
-                  ...styles.fill,
-                  width: order.length ? `${((pos + 1) / order.length) * 100}%` : "0%",
-                }}
-              />
-            </div>
-          </footer>
         </div>
       </div>
     );
@@ -594,7 +490,6 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
               <div style={styles.cardLabel}>
                 <span style={{ color: colorFor[q.cat] || "#fff", display: "inline-flex", alignItems: "center", gap: 8 }}>
                   {(activeDecks.find((d) => d.cat === q.cat) || {}).short || q.cat}
-                  {q.conf === "Medium" && <span style={styles.unverifiedBadge}>unverified</span>}
                 </span>
                 <span style={styles.qNum}>
                   {pos + 1} / {order.length}
@@ -815,62 +710,6 @@ const styles = {
     border: "1px solid rgba(255,255,255,0.08)",
     borderRadius: 10,
     padding: "11px 13px",
-  },
-  pendingNote: {
-    margin: "12px 2px 0",
-    fontSize: 13,
-    lineHeight: 1.5,
-    color: "#ffe0a3",
-    background: "rgba(255,153,0,0.1)",
-    border: "1px solid rgba(255,153,0,0.35)",
-    borderRadius: 10,
-    padding: "11px 13px",
-  },
-  pendingBadge: {
-    fontSize: 10.5,
-    fontWeight: 700,
-    letterSpacing: "0.04em",
-    textTransform: "uppercase",
-    color: "#ffce7a",
-    background: "rgba(255,153,0,0.14)",
-    border: "1px solid rgba(255,153,0,0.35)",
-    borderRadius: 6,
-    padding: "2px 7px",
-    whiteSpace: "nowrap",
-  },
-  unverifiedBadge: {
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-    color: "#e0b3ff",
-    background: "rgba(154,140,232,0.16)",
-    border: "1px solid rgba(154,140,232,0.45)",
-    borderRadius: 6,
-    padding: "2px 7px",
-    whiteSpace: "nowrap",
-  },
-  refOption: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: 11,
-    textAlign: "left",
-    width: "100%",
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    color: "#dbe4f2",
-    borderRadius: 13,
-    padding: "13px 15px",
-    fontSize: 14.5,
-    lineHeight: 1.35,
-    fontWeight: 500,
-    boxSizing: "border-box",
-  },
-  refLetter: {
-    color: "#6d80a1",
-    fontWeight: 700,
-    fontVariantNumeric: "tabular-nums",
-    flexShrink: 0,
   },
   resultVerdict: { fontSize: 15, fontWeight: 800, letterSpacing: "0.22em", marginBottom: 10 },
   resultScore: { fontSize: 56, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em" },
@@ -1145,16 +984,6 @@ const styles = {
     fontSize: 15,
     lineHeight: 1,
     pointerEvents: "none",
-  },
-  noteBox: {
-    marginTop: 18,
-    padding: "13px 15px",
-    background: "rgba(255,255,255,0.05)",
-    borderRadius: 12,
-    fontSize: 13.5,
-    lineHeight: 1.5,
-    color: "#d5dfef",
-    border: "1px solid rgba(255,255,255,0.08)",
   },
   nextBtn: {
     width: "100%",
