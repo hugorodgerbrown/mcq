@@ -173,7 +173,7 @@ reversible reading of the #Mock-configuration open question.
   **Test:** from `server/`,
   `SECRET_KEY=test uv run python manage.py test courses -v 2` → all 5 tests pass.
 
-- [ ] **Task 4 — Full tox green + scope guard** _(covers acceptance criteria 6, 7)_
+- [x] **Task 4 — Full tox green + scope guard** _(covers acceptance criteria 6, 7)_
 
   Run `uv run ruff format .` and `uv run ruff check --fix .`. Ensure mypy (type
   env) passes for the new module.

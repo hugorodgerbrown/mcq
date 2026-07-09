@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,61 +14,127 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Course',
+            name="Course",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200)),
-                ('rubric', models.TextField(blank=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='courses', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=200)),
+                ("rubric", models.TextField(blank=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="courses",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Exam',
+            name="Exam",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200)),
-                ('exam_size', models.PositiveIntegerField(default=50)),
-                ('pass_mark', models.PositiveIntegerField(default=80)),
-                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='exams', to='courses.course')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=200)),
+                ("exam_size", models.PositiveIntegerField(default=50)),
+                ("pass_mark", models.PositiveIntegerField(default=80)),
+                (
+                    "course",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="exams",
+                        to="courses.course",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Topic',
+            name="Topic",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200)),
-                ('exam', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='topics', to='courses.exam')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=200)),
+                (
+                    "exam",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="topics",
+                        to="courses.exam",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Question',
+            name="Question",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=50)),
-                ('text', models.TextField()),
-                ('option_a', models.CharField(max_length=500)),
-                ('option_b', models.CharField(max_length=500)),
-                ('option_c', models.CharField(max_length=500)),
-                ('option_d', models.CharField(max_length=500)),
-                ('correct', models.CharField(choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')], max_length=1)),
-                ('explanation', models.TextField(blank=True)),
-                ('source', models.CharField(blank=True, max_length=300)),
-                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='questions', to='courses.course')),
-                ('topic', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='questions', to='courses.topic')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("code", models.CharField(max_length=50)),
+                ("text", models.TextField()),
+                ("option_a", models.CharField(max_length=500)),
+                ("option_b", models.CharField(max_length=500)),
+                ("option_c", models.CharField(max_length=500)),
+                ("option_d", models.CharField(max_length=500)),
+                (
+                    "correct",
+                    models.CharField(
+                        choices=[("A", "A"), ("B", "B"), ("C", "C"), ("D", "D")], max_length=1
+                    ),
+                ),
+                ("explanation", models.TextField(blank=True)),
+                ("source", models.CharField(blank=True, max_length=300)),
+                (
+                    "course",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="questions",
+                        to="courses.course",
+                    ),
+                ),
+                (
+                    "topic",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="questions",
+                        to="courses.topic",
+                    ),
+                ),
             ],
         ),
         migrations.AddConstraint(
-            model_name='exam',
-            constraint=models.CheckConstraint(condition=models.Q(('pass_mark__lte', 100)), name='pass_mark_pct_max_100'),
+            model_name="exam",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("pass_mark__lte", 100)), name="pass_mark_pct_max_100"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='question',
-            constraint=models.UniqueConstraint(fields=('course', 'code'), name='unique_course_code'),
+            model_name="question",
+            constraint=models.UniqueConstraint(
+                fields=("course", "code"), name="unique_course_code"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='question',
-            constraint=models.CheckConstraint(condition=models.Q(('correct__in', ['A', 'B', 'C', 'D'])), name='correct_in_abcd'),
+            model_name="question",
+            constraint=models.CheckConstraint(
+                condition=models.Q(("correct__in", ["A", "B", "C", "D"])), name="correct_in_abcd"
+            ),
         ),
     ]
