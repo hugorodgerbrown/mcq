@@ -7,6 +7,7 @@ import {
   importCommit,
   importPreview,
   listCourses,
+  updateExam,
 } from "./api.js";
 
 // Topic colours, cycled by topic index when mapping API content into decks.
@@ -83,7 +84,7 @@ function shuffle(arr) {
 
 const LETTERS = ["A", "B", "C", "D"];
 
-function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
+function StudyApp({ tracks, trackKeys, courseName, onChangeCourse, onSettings }) {
   const [track, setTrack] = useState(trackKeys[0]); // which exam within the course
   // deck can be a cat string, "ALL", "ALL_SPECIES", or null (home)
   const [deck, setDeck] = useState(null);
@@ -270,6 +271,9 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
           <div style={styles.topBar}>
             <span style={styles.topBarName}>{courseName}</span>
             <span style={styles.topBarLinks}>
+              <button style={styles.linkBtn} onClick={onSettings}>
+                Settings
+              </button>
               <button style={styles.linkBtn} onClick={onChangeCourse}>
                 Change course
               </button>
@@ -1181,6 +1185,24 @@ const styles = {
     lineHeight: 1.5,
     marginBottom: 16,
   },
+
+  // exam settings screen
+  settingsRow: {
+    background: "rgba(255,255,255,0.045)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 16,
+    padding: "16px 18px 18px",
+    marginBottom: 14,
+    boxShadow: "0 20px 50px -20px rgba(0,0,0,0.6)",
+  },
+  settingsExamName: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: "#eaf0f9",
+    marginBottom: 12,
+  },
+  settingsFields: { display: "flex", gap: 12, marginBottom: 4 },
+  settingsField: { flex: 1, display: "block" },
 };
 
 // Centered themed card used by every shell screen (loading / login / picker).
@@ -1394,6 +1416,123 @@ function UploadCourse({ course, onDone }) {
   );
 }
 
+// One editable Exam row inside the settings screen. Holds its own draft of
+// exam_size / pass_mark; on Save it PATCHes and, on success, reflects the saved
+// values and notifies the parent so the study content reloads.
+function ExamSettingsRow({ course, exam, onSaved }) {
+  const [size, setSize] = useState(String(exam.exam_size));
+  const [mark, setMark] = useState(String(exam.pass_mark));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+  const sizeField = useFocusStyle(styles.input);
+  const markField = useFocusStyle(styles.input);
+
+  const save = async () => {
+    setBusy(true);
+    setError("");
+    setSaved(false);
+    const { ok, data } = await updateExam(
+      course.id,
+      exam.id,
+      Number(size),
+      Number(mark)
+    );
+    setBusy(false);
+    if (ok) {
+      setSize(String(data.exam_size));
+      setMark(String(data.pass_mark));
+      setSaved(true);
+      onSaved();
+    } else {
+      const errs = (data && data.errors) || {};
+      setError(errs.exam_size || errs.pass_mark || errs.detail || "Could not save.");
+    }
+  };
+
+  return (
+    <div style={styles.settingsRow}>
+      <div style={styles.settingsExamName}>{exam.name}</div>
+      <div style={styles.settingsFields}>
+        <label style={styles.settingsField}>
+          <span style={styles.fieldLabel}>Mock size</span>
+          <input
+            {...sizeField}
+            type="number"
+            min="1"
+            value={size}
+            onChange={(e) => {
+              setSize(e.target.value);
+              setSaved(false);
+            }}
+          />
+        </label>
+        <label style={styles.settingsField}>
+          <span style={styles.fieldLabel}>Pass mark (%)</span>
+          <input
+            {...markField}
+            type="number"
+            min="1"
+            max="100"
+            value={mark}
+            onChange={(e) => {
+              setMark(e.target.value);
+              setSaved(false);
+            }}
+          />
+        </label>
+      </div>
+      {error && <p style={styles.formError}>{error}</p>}
+      <button
+        style={{ ...styles.shellCta, width: "100%", opacity: busy ? 0.6 : 1 }}
+        onClick={save}
+        disabled={busy}
+      >
+        {busy ? "Saving…" : saved ? "Saved ✓" : "Save"}
+      </button>
+    </div>
+  );
+}
+
+// Exam settings screen: lists the current course's Exams, each with editable
+// mock size and pass mark. Reached from the study top bar; "Back" returns to
+// study. onSaved reloads the study content so the mock uses the new values.
+function ExamSettings({ course, exams, onSaved, onBack }) {
+  return (
+    <div style={styles.root}>
+      <div style={styles.wrap}>
+        <div style={styles.topBar}>
+          <span style={styles.topBarName}>{course.name}</span>
+          <span style={styles.topBarLinks}>
+            <button style={styles.linkBtn} onClick={onBack}>
+              Back to study
+            </button>
+          </span>
+        </div>
+        <header style={styles.homeHeader}>
+          <div style={styles.eyebrow}>{course.name}</div>
+          <h1 style={styles.homeTitle}>Exam settings</h1>
+          <p style={styles.homeSub}>
+            Set each exam&apos;s mock size and pass mark. Saved values apply to the
+            mock exam.
+          </p>
+        </header>
+        {(exams || []).map((exam) => (
+          <ExamSettingsRow
+            key={exam.id}
+            course={course}
+            exam={exam}
+            onSaved={onSaved}
+          />
+        ))}
+        <button style={styles.formCancel} onClick={onBack}>
+          Back to study
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Outer shell: gates on auth, picks a course, loads its content from the JSON
 // API, then hands the mapped tracks to the study UI (StudyApp).
 export default function App() {
@@ -1401,7 +1540,7 @@ export default function App() {
   const [courses, setCourses] = useState(null); // null=not loaded yet
   const [course, setCourse] = useState(null); // selected course {id, name, ...}
   const [content, setContent] = useState(null); // loaded course content
-  const [view, setView] = useState(null); // null | "create" | "upload" (shell screens)
+  const [view, setView] = useState(null); // null | "create" | "upload" | "settings" (shell screens)
 
   useEffect(() => {
     // getMe() resolves to the user object or null (anon/403). Coerce null to
@@ -1533,6 +1672,17 @@ export default function App() {
     );
   }
 
+  if (view === "settings") {
+    return (
+      <ExamSettings
+        course={course}
+        exams={content.exams}
+        onSaved={() => getCourseContent(course.id).then(setContent)}
+        onBack={() => setView(null)}
+      />
+    );
+  }
+
   const { tracks, trackKeys } = contentToTracks(content);
 
   if (trackKeys.length === 0) {
@@ -1554,6 +1704,7 @@ export default function App() {
       trackKeys={trackKeys}
       courseName={course.name}
       onChangeCourse={changeCourse}
+      onSettings={() => setView("settings")}
     />
   );
 }
