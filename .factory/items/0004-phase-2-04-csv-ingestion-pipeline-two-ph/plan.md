@@ -205,7 +205,7 @@ unchanged (uv + tox, Python 3.12); run via `uv run …` / `.venv/bin/…` from
 
   **Test:** covered by Task 3.
 
-- [ ] **Task 3 — Tests** _(covers acceptance criteria 1, 2, 3, 4, 5)_
+- [x] **Task 3 — Tests** _(covers acceptance criteria 1, 2, 3, 4, 5)_
 
   Create `server/courses/tests/test_importer.py`:
 
