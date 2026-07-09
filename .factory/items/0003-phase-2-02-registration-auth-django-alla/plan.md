@@ -161,7 +161,7 @@ work and `tox` is green, not verbatim transcription.
   differs for the pinned allauth version, adjust to that version's names (keep the
   asserted behavior).
 
-- [ ] **Task 5 — Full tox green + SPA untouched** _(covers acceptance criteria 7)_
+- [x] **Task 5 — Full tox green + SPA untouched** _(covers acceptance criteria 7)_
 
   `uv run ruff format .`, `uv run ruff check --fix .`, fix any mypy issues (type
   env). Confirm `uv.lock` is committed.
