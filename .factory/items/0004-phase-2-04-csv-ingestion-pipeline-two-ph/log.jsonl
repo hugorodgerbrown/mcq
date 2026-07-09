@@ -2,3 +2,14 @@
 {"data": {"priority": 4}, "event": "priority.set", "ts": "2026-07-09T13:41:41Z"}
 {"data": {"from": "idea", "reason": "Batch roadmap: owner-approved, priority+triage.md set", "to": "triage"}, "event": "stage.advance", "ts": "2026-07-09T13:43:11Z"}
 {"data": {"from": "triage", "reason": "Batch roadmap: exit triage to spec", "to": "spec"}, "event": "stage.advance", "ts": "2026-07-09T13:43:11Z"}
+{"data": {"from": "spec", "reason": "spec.md written; mixed -> design", "to": "design"}, "event": "stage.advance", "ts": "2026-07-09T14:40:21Z"}
+{"data": {"from": "design", "reason": "design/choice.md recorded (API contract); mixed -> plan", "to": "plan"}, "event": "stage.advance", "ts": "2026-07-09T14:41:17Z"}
+{"data": {"from": "plan", "reason": "plan.md with 4 checkbox tasks", "to": "implement"}, "event": "stage.advance", "ts": "2026-07-09T14:42:18Z"}
+{"data": {"tasks": 4, "tests": "tox green; 17 tests"}, "event": "implement.completed", "ts": "2026-07-09T14:47:03Z"}
+{"data": {"from": "implement", "reason": "4 tasks, tox green, scope held", "to": "review"}, "event": "stage.advance", "ts": "2026-07-09T14:47:03Z"}
+{"event": "review.approved", "ts": "2026-07-09T14:47:03Z"}
+{"data": {"from": "review", "reason": "review clean", "to": "verify"}, "event": "stage.advance", "ts": "2026-07-09T14:47:03Z"}
+{"data": {"criteria": "7/7", "tests": "17 passed; tox all OK; live round-trip merge verified"}, "event": "verify.green", "ts": "2026-07-09T14:48:07Z"}
+{"data": {"from": "verify", "reason": "7/7 verified green", "to": "ship"}, "event": "stage.advance", "ts": "2026-07-09T14:48:07Z"}
+{"data": {"mode": "auto", "ref": "030e9414f31328fb9e555f1f54249de90386da82"}, "event": "ship.merged", "ts": "2026-07-09T14:48:23Z"}
+{"data": {"from": "ship", "reason": "merged 030e9414f31328fb9e555f1f54249de90386da82; merged-tree tox green", "to": "done"}, "event": "stage.advance", "ts": "2026-07-09T14:48:23Z"}

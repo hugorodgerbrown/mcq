@@ -100,3 +100,10 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   server-rendered auth pages themed to the app (`data-auth-base` marker). Default
   `User` + email login (no custom user — bid-0009). `LOGIN_REDIRECT_URL="/"`
   awaits the SPA root (item 0006).
+- **2026-07-09 — item 0004 / DSC-4 (CSV ingestion) shipped to `main`** via `auto`
+  merge (merge commit `030e941`). `courses.importer` two-phase import: `parse_preview`
+  (summary, no write) and `commit_import` (merge on `(course, code)` via
+  `update_or_create` — update in place, insert new, no wipe), inside a transaction;
+  owner-scoped API `POST /api/v1/courses/<id>/import/{preview,commit}/`. Structural
+  validation seam (`validate_rows`) that item 0005 hardens. Stateless re-commit
+  (client re-sends the file — bid-0010).

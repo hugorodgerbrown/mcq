@@ -10,7 +10,7 @@ below link there. Priority = Linear priority; stage = Linear status.
 - [High] DSC-1 · Django backend foundation (project, settings, JSON API scaffold) (done)
 - [High] DSC-2 · Registration & auth (django-allauth: email/password, verification, reset) (done)
 - [High] DSC-3 · Data model: Course → Exam → Topic → Question (done)
-- [High] DSC-4 · CSV ingestion pipeline (two-phase import, merge on Code) (Backlog)
+- [High] DSC-4 · CSV ingestion pipeline (two-phase import, merge on Code) (done)
 - [Medium] DSC-5 · CSV validation (four options, Correct resolves, Code unique) (Backlog)
 - [Medium] DSC-6 · Course management UI (create with name + rubric; view/manage own) (Backlog)
 - [Medium] DSC-7 · Generalise study modes (Practice / Flashcard / Mock) over any course (Backlog)
