@@ -1,0 +1,4 @@
+{"event": "item.created", "ts": "2026-07-09T13:41:12Z"}
+{"data": {"priority": 4}, "event": "priority.set", "ts": "2026-07-09T13:41:41Z"}
+{"data": {"from": "idea", "reason": "Batch roadmap: owner-approved, priority+triage.md set", "to": "triage"}, "event": "stage.advance", "ts": "2026-07-09T13:43:11Z"}
+{"data": {"from": "triage", "reason": "Batch roadmap: exit triage to spec", "to": "spec"}, "event": "stage.advance", "ts": "2026-07-09T13:43:11Z"}

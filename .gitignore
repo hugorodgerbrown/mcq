@@ -1,2 +1,8 @@
 node_modules/
 dist/
+
+# Factory run-local state — transient per-run transcripts and append-only
+# ledgers. The durable brain (docs/factory/), config.json, and items/ stay
+# tracked.
+.factory/runs/
+.factory/ledgers/

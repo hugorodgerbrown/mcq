@@ -1,0 +1,10 @@
+{
+  "gates": [
+    "design"
+  ],
+  "merge": "auto",
+  "research": {
+    "depth": "web"
+  },
+  "version": 1
+}
