@@ -450,6 +450,7 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse, onSettings })
                     <span style={styles.reviewLbl}>Correct</span>
                     <span>{rq.correct}. {rq[rq.correct]}</span>
                   </div>
+                  <SourceBadge source={rq.source} />
                 </div>
               ))}
             </div>
@@ -532,6 +533,7 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse, onSettings })
                       );
                     })}
                   </div>
+                  {solved && <SourceBadge source={q.source} />}
                 </>
               ) : mode === "exam" ? (
                 <>
@@ -571,6 +573,7 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse, onSettings })
                     <div style={styles.answerBox}>
                       <div style={styles.answerLabel}>ANSWER</div>
                       <div style={styles.answerText}>{q[q.correct]}</div>
+                      <SourceBadge source={q.source} />
                     </div>
                   ) : (
                     <div style={styles.tapHint}>tap to reveal answer</div>
