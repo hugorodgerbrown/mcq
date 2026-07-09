@@ -286,7 +286,7 @@ unchanged (uv + tox, Python 3.12); run via `uv run …` / `.venv/bin/…` from
   `SECRET_KEY=test uv run python manage.py test courses.tests.test_importer -v 2`
   → 5 tests pass.
 
-- [ ] **Task 4 — Full tox green + scope guard** _(covers acceptance criteria 6, 7)_
+- [x] **Task 4 — Full tox green + scope guard** _(covers acceptance criteria 6, 7)_
 
   `uv run ruff format .`, `uv run ruff check --fix .`, fix mypy issues (type env).
 

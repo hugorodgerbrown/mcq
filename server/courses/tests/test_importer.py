@@ -42,7 +42,9 @@ class ImportApiTests(APITestCase):
         self.client.force_login(self.owner)
         self.client.post(self._url("commit"), {"file": csv_file(HEADER + ROW + ROW2)})
         # change Q1 answer to C, add Q3; Q2 omitted (must stay, no wipe)
-        changed = HEADER + "Written,Law,Q1,What?,a,b,c,d,C,,\n" + "Written,Law,Q3,New?,a,b,c,d,D,,\n"
+        changed = (
+            HEADER + "Written,Law,Q1,What?,a,b,c,d,C,,\n" + "Written,Law,Q3,New?,a,b,c,d,D,,\n"
+        )
         resp = self.client.post(self._url("commit"), {"file": csv_file(changed)})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(Question.objects.filter(course=self.course).count(), 3)  # Q1,Q2,Q3
