@@ -247,7 +247,7 @@ commands via the venv — `uv run python manage.py …`, `.venv/bin/tox`. `tox`
 
   **Test:** `SECRET_KEY=test python manage.py check` still exits 0.
 
-- [ ] **Task 5 — Health-endpoint test** _(covers acceptance criteria 4, 5)_
+- [x] **Task 5 — Health-endpoint test** _(covers acceptance criteria 4, 5)_
 
   Create `server/api/tests/__init__.py` (empty) and `server/api/tests/test_health.py`:
 
