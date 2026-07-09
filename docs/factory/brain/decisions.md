@@ -107,3 +107,9 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   owner-scoped API `POST /api/v1/courses/<id>/import/{preview,commit}/`. Structural
   validation seam (`validate_rows`) that item 0005 hardens. Stateless re-commit
   (client re-sends the file — bid-0010).
+- **2026-07-09 — item 0005 / DSC-5 (CSV validation) shipped to `main`** via `auto`
+  merge (merge commit `94f810a`). Hardened `validate_rows`: four options non-empty,
+  `Correct` resolves to A–D, `Code` unique within the file (each repeat flagged,
+  references first-seen row), `{row,message}` errors that block commit (400, no
+  write). Item 0004 tests still green. **Backend half of Phase 2 complete
+  (items 0001–0005).**
