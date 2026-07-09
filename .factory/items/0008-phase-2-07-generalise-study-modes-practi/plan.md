@@ -42,7 +42,7 @@ the quoted code.
 
   **Test:** `npm run build`; behavior verified in the browser (verify stage).
 
-- [ ] **Task 2 — Remove dead unanswered/unverified affordances** _(covers acceptance criteria 4)_
+- [x] **Task 2 — Remove dead unanswered/unverified affordances** _(covers acceptance criteria 4)_
 
   API questions always have a real A–D `correct` and no `conf`, so these never
   render. Remove them from `src/App.jsx`:
