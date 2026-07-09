@@ -103,7 +103,7 @@ reversible reading of the #Mock-configuration open question.
 
   **Test:** none yet (models need registration + migration first — Task 2).
 
-- [ ] **Task 2 — Register app + migrations** _(covers acceptance criteria 1)_
+- [x] **Task 2 — Register app + migrations** _(covers acceptance criteria 1)_
 
   In `server/config/settings.py`, add `"courses"` to `INSTALLED_APPS` (after
   `"api"`).
