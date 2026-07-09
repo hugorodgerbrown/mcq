@@ -8,4 +8,9 @@ urlpatterns = [
     path("<int:pk>/content/", api_views.course_content, name="content"),
     path("<int:pk>/import/preview/", api_views.import_preview, name="import-preview"),
     path("<int:pk>/import/commit/", api_views.import_commit, name="import-commit"),
+    path(
+        "<int:course_pk>/exams/<int:exam_pk>/",
+        api_views.exam_update,
+        name="exam-update",
+    ),
 ]

@@ -7,7 +7,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from . import importer
-from .models import Course
+from .models import Course, Exam
 from .serializers import CourseContentSerializer, CourseListSerializer
 
 
@@ -40,6 +40,35 @@ def course_content(request: Request, pk: int) -> Response:
     if course is None:
         return Response(status=status.HTTP_403_FORBIDDEN)
     return Response(CourseContentSerializer(course).data)
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def exam_update(request: Request, course_pk: int, exam_pk: int) -> Response:
+    course = _owned_course(request, course_pk)
+    if course is None:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    exam = get_object_or_404(Exam, pk=exam_pk, course=course)
+    try:
+        size = int(request.data.get("exam_size", exam.exam_size))
+        mark = int(request.data.get("pass_mark", exam.pass_mark))
+    except (TypeError, ValueError):
+        return Response({"errors": {"detail": "Numbers required"}}, status=400)
+    if size < 1:
+        return Response({"errors": {"exam_size": "Must be at least 1"}}, status=400)
+    if not (1 <= mark <= 100):
+        return Response({"errors": {"pass_mark": "Must be 1–100"}}, status=400)
+    exam.exam_size = size
+    exam.pass_mark = mark
+    exam.save(update_fields=["exam_size", "pass_mark"])
+    return Response(
+        {
+            "id": exam.id,
+            "name": exam.name,
+            "exam_size": exam.exam_size,
+            "pass_mark": exam.pass_mark,
+        }
+    )
 
 
 @api_view(["POST"])
