@@ -114,7 +114,7 @@ reversible reading of the #Mock-configuration open question.
   **Test:** `SECRET_KEY=test uv run python manage.py makemigrations --check --dry-run`
   exits 0 (no missing migrations); `migrate` applies cleanly (acceptance 1).
 
-- [ ] **Task 3 — Model tests** _(covers acceptance criteria 2, 3, 4, 5)_
+- [x] **Task 3 — Model tests** _(covers acceptance criteria 2, 3, 4, 5)_
 
   Create `server/courses/tests/__init__.py` (empty) and
   `server/courses/tests/test_models.py`:
