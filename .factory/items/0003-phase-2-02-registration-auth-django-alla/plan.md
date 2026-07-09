@@ -93,7 +93,7 @@ work and `tox` is green, not verbatim transcription.
 
   **Test:** covered by Task 4's `AuthPageThemeTests`.
 
-- [ ] **Task 4 — Tests** _(covers acceptance criteria 2, 3, 4, 5, 6)_
+- [x] **Task 4 — Tests** _(covers acceptance criteria 2, 3, 4, 5, 6)_
 
   Create `server/api/tests/test_auth.py` (uses Django test client + allauth):
   ```python
