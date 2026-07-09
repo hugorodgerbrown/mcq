@@ -132,7 +132,7 @@ Refactor `src/App.jsx` **in place** — keep the study UI, swap the data source.
 
   **Test:** `SECRET_KEY=test uv run python manage.py test courses.tests.test_api_read -v 2` → 2 tests pass.
 
-- [ ] **Task 2 — Single-origin serving** _(covers acceptance criteria 3)_
+- [x] **Task 2 — Single-origin serving** _(covers acceptance criteria 3)_
 
   Edit repo-root `vite.config.js` so the build targets Django and assets resolve
   under `/static/`:
