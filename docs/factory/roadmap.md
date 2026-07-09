@@ -14,7 +14,7 @@ below link there. Priority = Linear priority; stage = Linear status.
 - [Medium] DSC-5 · CSV validation (four options, Correct resolves, Code unique) (done)
 - [Medium] DSC-6 · Course management UI (create with name + rubric; view/manage own) (done)
 - [Medium] DSC-7 · Generalise study modes (Practice / Flashcard / Mock) over any course (done)
-- [Medium] DSC-8 · Per-Exam mock configuration (exam_size, pass_mark) (Backlog)
+- [Medium] DSC-8 · Per-Exam mock configuration (exam_size, pass_mark) (done)
 - [Medium] DSC-9 · SPA ↔ JSON API integration + single-origin Render deploy (done)
 - [Low] DSC-10 · Answer provenance (optional Source column → in-app badge) (Backlog)
 - [Low] DSC-11 · Email-provider wiring (Backlog)

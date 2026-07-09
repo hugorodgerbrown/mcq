@@ -144,3 +144,8 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   unanswered/unverified affordances (API always has real answers). Frontend-only.
   Verified live: Practice, Flashcard (reveal→grade), and a short-deck Mock
   (3 drawn / need 2, "Pass mark 80% — 2 / 3 (short deck)").
+- **2026-07-09 — item 0009 / DSC-8 (per-Exam mock config) shipped to `main`** via
+  `auto` merge. `PATCH /api/v1/courses/<cid>/exams/<eid>/` (owner-scoped, validates
+  exam_size≥1 / pass_mark 1–100); themed Exam settings screen reached from the study
+  top bar; on save the content reloads so the mock uses the new values. Verified
+  live: 80%→60% and size 5→4 reflected in the mock intro.
