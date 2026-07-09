@@ -1,7 +1,5 @@
 {
-  "gates": [
-    "design"
-  ],
+  "gates": [],
   "merge": "auto",
   "research": {
     "depth": "web"

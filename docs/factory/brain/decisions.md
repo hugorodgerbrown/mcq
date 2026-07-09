@@ -64,6 +64,20 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
 - **Courses are private to their owner** — no sharing or public library in
   Phase 2 (source: #Out-of-scope).
 
+## Phase 2 design delegation
+
+- **2026-07-09 — design gate removed; design delegated to the builder within the
+  existing style.** The owner entrusted design decisions to the factory, bounded
+  by the shipped app's visual language (dark, mobile-first, single-column, the
+  lime/amber/pink status palette and per-topic accents in
+  `design-system.md`), noting the product isn't live so tweaks later are fine.
+  `.factory/config.json` `gates` changed `["design"] → []`. UI/mixed items still
+  produce a `design/choice.md` recording the chosen approach, but no longer pause
+  for a human. New UI reuses the Phase-1 tokens; server-rendered auth
+  (django-allauth) is styled to the same dark theme (this keeps auth working
+  without JS, while the study app stays the deliberately JS-first SPA per
+  #Decisions-surfaced).
+
 ## Phase 2 ship log
 
 - **2026-07-09 — item 0001 / DSC-1 (Django backend foundation) shipped to `main`**
@@ -79,3 +93,10 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   `pass_mark`≤100 check constraints; `pass_mark` modelled as a percentage
   (default 80). Answer-confidence scale dropped (owner) — only free-text `source`
   retained. Follow-up (bid-0007): tox `type` env doesn't yet cover model modules.
+- **2026-07-09 — item 0003 / DSC-2 (registration & auth) shipped to `main`** via
+  `auto` merge (merge commit `57da967`). django-allauth 65.18.0: email/password
+  signup, mandatory email verification (console backend until 0011), password
+  reset, session-based API auth (`SessionAuthentication` + `/api/v1/me/`), and
+  server-rendered auth pages themed to the app (`data-auth-base` marker). Default
+  `User` + email login (no custom user — bid-0009). `LOGIN_REDIRECT_URL="/"`
+  awaits the SPA root (item 0006).

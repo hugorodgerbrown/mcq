@@ -8,7 +8,7 @@ issues in team **Q&A** on 2026-07-09. Linear is the record of work; the ids
 below link there. Priority = Linear priority; stage = Linear status.
 
 - [High] DSC-1 · Django backend foundation (project, settings, JSON API scaffold) (done)
-- [High] DSC-2 · Registration & auth (django-allauth: email/password, verification, reset) (Backlog)
+- [High] DSC-2 · Registration & auth (django-allauth: email/password, verification, reset) (done)
 - [High] DSC-3 · Data model: Course → Exam → Topic → Question (done)
 - [High] DSC-4 · CSV ingestion pipeline (two-phase import, merge on Code) (Backlog)
 - [Medium] DSC-5 · CSV validation (four options, Correct resolves, Code unique) (Backlog)
