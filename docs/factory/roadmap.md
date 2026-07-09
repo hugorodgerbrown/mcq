@@ -17,7 +17,7 @@ below link there. Priority = Linear priority; stage = Linear status.
 - [Medium] DSC-8 · Per-Exam mock configuration (exam_size, pass_mark) (done)
 - [Medium] DSC-9 · SPA ↔ JSON API integration + single-origin Render deploy (done)
 - [Low] DSC-10 · Answer provenance (optional Source column → in-app badge) (done)
-- [Low] DSC-11 · Email-provider wiring (Backlog)
+- [Low] DSC-11 · Email-provider wiring (done)
 
 ## Recommended build order
 

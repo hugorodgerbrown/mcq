@@ -154,3 +154,10 @@ Chosen during Phase 2 scoping (source: docs/factory/prd/dsc1-phase-2.md).
   revealed answers in Practice, Flashcard, and Mock review — answer-side only, never
   on the question front (no early hint); no badge when `source` empty. Live-verified
   in Practice ("Source: DMQ").
+- **2026-07-09 — item 0011 / DSC-11 (email-provider wiring) shipped to `main`** via
+  `auto` merge. Env-driven `EMAIL_BACKEND` (console in dev, SMTP in prod via a
+  testable `_resolve_email_backend` helper); SMTP host/port/user/password/TLS and
+  `DEFAULT_FROM_EMAIL` from env; `render.yaml` declares the 6 email env vars
+  (`sync:false`, no credential committed). allauth verification/reset emails now
+  send in production. Verified live (dev→console, prod→smtp, override).
+  **Phase 2 complete — all 11 items (0001–0011 / DSC-1…DSC-11) shipped.**
