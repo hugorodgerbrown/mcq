@@ -16,9 +16,19 @@ def _owned_course(request: Request, pk: int) -> Course | None:
     return course if course.owner_id == request.user.id else None
 
 
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def course_list(request: Request) -> Response:
+    if request.method == "POST":
+        name = (request.data.get("name") or "").strip()
+        if not name:
+            return Response({"errors": {"name": "Name is required"}}, status=400)
+        course = Course.objects.create(
+            owner=request.user,
+            name=name,
+            rubric=(request.data.get("rubric") or "").strip(),
+        )
+        return Response(CourseListSerializer(course).data, status=status.HTTP_201_CREATED)
     courses = Course.objects.filter(owner=request.user).order_by("name")
     return Response(CourseListSerializer(courses, many=True).data)
 

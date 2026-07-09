@@ -24,3 +24,29 @@ export async function getCourseContent(id) {
   const res = await req(`/api/v1/courses/${id}/content/`);
   return res.ok ? res.json() : null;
 }
+export async function createCourse(name, rubric) {
+  const res = await req("/api/v1/courses/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, rubric }),
+  });
+  return res.ok ? res.json() : null;
+}
+export async function importPreview(courseId, file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await req(`/api/v1/courses/${courseId}/import/preview/`, {
+    method: "POST",
+    body: fd,
+  });
+  return res.json();
+}
+export async function importCommit(courseId, file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await req(`/api/v1/courses/${courseId}/import/commit/`, {
+    method: "POST",
+    body: fd,
+  });
+  return { ok: res.ok, data: await res.json() };
+}
