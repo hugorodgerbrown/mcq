@@ -69,6 +69,7 @@ function contentToTracks(content) {
       speciesCats: new Set(),
       examSize: exam.exam_size,
       examPass: Math.round((exam.pass_mark / 100) * exam.exam_size),
+      passMarkPct: exam.pass_mark,
     };
   }
   return { tracks, trackKeys };
@@ -107,7 +108,7 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
   const activeDecks = activeTrack.decks;
   const speciesCats = activeTrack.speciesCats;
   const EXAM_SIZE = activeTrack.examSize;
-  const EXAM_PASS = activeTrack.examPass;
+  const PASS_PCT = activeTrack.passMarkPct;
   // Per-question answer availability. Unanswered questions (correct "?") are
   // shown but their answers are disabled and labelled; answered ones play fully.
   const answeredCounts = useMemo(() => {
@@ -265,9 +266,11 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
       if (picked !== qq.correct) review.push({ q: qq, picked });
     }
     const total = order.length;
-    const passNeeded = Math.min(EXAM_PASS, total); // scale if deck < exam size
+    // Scale the pass threshold by the exam's percentage: an 80% exam on a
+    // 10-question pool needs 8, not the nominal count. At least 1 to pass.
+    const passNeeded = Math.max(1, Math.round((PASS_PCT / 100) * total));
     return { score, total, passNeeded, passed: score >= passNeeded, byCat, review };
-  }, [mode, order, examAnswers, byId, EXAM_PASS]);
+  }, [mode, order, examAnswers, byId, PASS_PCT]);
 
   const correct = hits;
 
@@ -344,7 +347,7 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
 
           {mode === "exam" ? (
             <p style={styles.examNote}>
-              {EXAM_SIZE} questions across all topics. No feedback until the end. Pass mark 80% ({EXAM_PASS}/{EXAM_SIZE}).
+              {EXAM_SIZE} questions across all topics. No feedback until the end. Pass mark {PASS_PCT}%.
             </p>
           ) : unansweredTotal > 0 ? (
             <p style={styles.pendingNote}>
@@ -429,7 +432,7 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse }) {
             </div>
             <div style={styles.resultPct}>{pct}%</div>
             <div style={styles.resultThreshold}>
-              Pass mark {passNeeded} / {total}
+              Pass mark {PASS_PCT}% — {passNeeded} / {total}
               {total < EXAM_SIZE ? " (short deck)" : ""}
             </div>
           </div>
