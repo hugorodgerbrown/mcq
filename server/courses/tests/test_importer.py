@@ -28,7 +28,10 @@ class ImportApiTests(APITestCase):
         self.client.force_login(self.owner)
         resp = self.client.post(self._url("preview"), {"file": csv_file(HEADER + ROW + ROW2)})
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["totals"], {"rows": 2, "new": 2, "updated": 0})
+        self.assertEqual(
+            resp.json()["totals"],
+            {"rows": 2, "new": 2, "updated": 0, "valid": 2, "invalid": 0},
+        )
         self.assertEqual(Question.objects.count(), 0)  # nothing written
 
     def test_commit_creates(self):

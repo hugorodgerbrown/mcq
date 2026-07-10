@@ -62,6 +62,14 @@ def validate_rows(rows: list[dict]) -> list[RowError]:
     return errors
 
 
+def _partition_rows(rows: list[dict], errors: list[RowError]) -> tuple[list[dict], int]:
+    # Split rows into (valid, skipped_count) using row-level validation errors.
+    # Row numbering matches validate_rows: first data row = 2.
+    bad = {e.row for e in errors}
+    valid = [row for i, row in enumerate(rows, start=2) if i not in bad]
+    return valid, len(rows) - len(valid)
+
+
 def _summarize(course, rows: list[dict]) -> dict:
     existing = set(Question.objects.filter(course=course).values_list("code", flat=True))
     exams: dict[str, dict[str, int]] = {}
@@ -83,19 +91,28 @@ def _summarize(course, rows: list[dict]) -> dict:
 
 
 def parse_preview(course, file) -> dict:
-    rows, errors = _read_rows(file)
-    errors = errors + validate_rows(rows)
+    rows, structural = _read_rows(file)
+    row_errors = validate_rows(rows)
     summary = _summarize(course, rows)
-    summary["errors"] = [{"row": e.row, "message": e.message} for e in errors]
+    _, invalid = _partition_rows(rows, row_errors)
+    summary["totals"]["valid"] = len(rows) - invalid
+    summary["totals"]["invalid"] = invalid
+    summary["errors"] = [{"row": e.row, "message": e.message} for e in structural + row_errors]
     return summary
 
 
 @transaction.atomic
-def commit_import(course, file) -> dict:
-    rows, errors = _read_rows(file)
-    errors = errors + validate_rows(rows)
-    if errors:
-        raise ImportValidationError(errors)
+def commit_import(course, file, *, skip_invalid: bool = False) -> dict:
+    rows, structural = _read_rows(file)
+    # Structural errors (e.g. missing headers) always block — nothing to salvage.
+    if structural:
+        raise ImportValidationError(structural)
+    row_errors = validate_rows(rows)
+    skipped = 0
+    if row_errors:
+        if not skip_invalid:
+            raise ImportValidationError(row_errors)
+        rows, skipped = _partition_rows(rows, row_errors)
     exams_seen: set[int] = set()
     topics_seen: set[int] = set()
     created = updated = 0
@@ -126,4 +143,5 @@ def commit_import(course, file) -> dict:
         "topics": len(topics_seen),
         "questions_created": created,
         "questions_updated": updated,
+        "questions_skipped": skipped,
     }

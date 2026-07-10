@@ -70,3 +70,34 @@ class ValidationBlocksCommitTests(APITestCase):
         resp = self._post("preview", body)
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(any("option B is empty" in e["message"] for e in resp.json()["errors"]))
+
+    def test_preview_reports_valid_and_invalid_counts(self):
+        body = HEADER + "S,Cat,Q1,Ok,a,b,c,d,A\n" + "S,Cat,Q2,Bad,a,b,c,d,Z\n"
+        totals = self._post("preview", body).json()["totals"]
+        self.assertEqual(totals["rows"], 2)
+        self.assertEqual(totals["valid"], 1)
+        self.assertEqual(totals["invalid"], 1)
+
+    def _skip_body(self):
+        return HEADER + "S,Cat,Q1,Ok,a,b,c,d,A\n" + "S,Cat,Q2,Bad,a,b,c,d,Z\n"
+
+    def test_skip_invalid_imports_only_valid_rows(self):
+        resp = self.client.post(
+            f"/api/v1/courses/{self.course.pk}/import/commit/",
+            {
+                "file": SimpleUploadedFile(
+                    "c.csv", self._skip_body().encode(), content_type="text/csv"
+                ),
+                "skip_invalid": "true",
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["questions_created"], 1)
+        self.assertEqual(resp.json()["questions_skipped"], 1)
+        self.assertEqual(Question.objects.filter(course=self.course).count(), 1)
+        self.assertEqual(Question.objects.get(course=self.course).code, "Q1")
+
+    def test_invalid_still_blocks_without_skip_flag(self):
+        resp = self._post("commit", self._skip_body())
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(Question.objects.count(), 0)
