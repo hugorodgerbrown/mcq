@@ -94,8 +94,9 @@ def import_commit(request: Request, pk: int) -> Response:
     upload = request.FILES.get("file")
     if not upload:
         return Response({"errors": [{"row": 0, "message": "No file uploaded"}]}, status=400)
+    skip_invalid = str(request.data.get("skip_invalid", "")).lower() in ("1", "true", "yes", "on")
     try:
-        result = importer.commit_import(course, upload)
+        result = importer.commit_import(course, upload, skip_invalid=skip_invalid)
     except importer.ImportValidationError as exc:
         return Response(
             {"errors": [{"row": e.row, "message": e.message} for e in exc.errors]}, status=400

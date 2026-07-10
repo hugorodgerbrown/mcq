@@ -41,9 +41,10 @@ export async function importPreview(courseId, file) {
   });
   return res.json();
 }
-export async function importCommit(courseId, file) {
+export async function importCommit(courseId, file, skipInvalid = false) {
   const fd = new FormData();
   fd.append("file", file);
+  if (skipInvalid) fd.append("skip_invalid", "true");
   const res = await req(`/api/v1/courses/${courseId}/import/commit/`, {
     method: "POST",
     body: fd,

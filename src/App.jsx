@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 
 import {
   createCourse,
@@ -1322,6 +1322,10 @@ function UploadCourse({ course, onDone }) {
 
   const errors = (summary && summary.errors) || [];
   const total = summary ? summary.totals.rows : 0;
+  const valid = summary && summary.totals.valid != null ? summary.totals.valid : total;
+  const invalid = summary && summary.totals.invalid != null ? summary.totals.invalid : 0;
+  // Structural errors (e.g. missing headers) have no salvageable rows.
+  const structural = summary ? valid === 0 : false;
 
   const onPick = async (e) => {
     const picked = e.target.files && e.target.files[0];
@@ -1340,10 +1344,10 @@ function UploadCourse({ course, onDone }) {
   };
 
   const doImport = async () => {
-    if (!file || errors.length) return;
+    if (!file || valid === 0) return;
     setBusy(true);
     setError("");
-    const { ok, data } = await importCommit(course.id, file);
+    const { ok, data } = await importCommit(course.id, file, invalid > 0);
     setBusy(false);
     if (ok) setCommitted(data);
     else setError("Import failed — please check the file and try again.");
@@ -1401,17 +1405,27 @@ function UploadCourse({ course, onDone }) {
               </div>
             )}
 
+            {invalid > 0 && valid > 0 && (
+              <p style={styles.shellText}>
+                {invalid} question{invalid === 1 ? "" : "s"} with errors will be skipped.
+              </p>
+            )}
+
             <button
               style={{
                 ...styles.shellCta,
                 width: "100%",
-                opacity: errors.length || busy ? 0.5 : 1,
-                cursor: errors.length ? "not-allowed" : "pointer",
+                opacity: valid === 0 || busy ? 0.5 : 1,
+                cursor: valid === 0 ? "not-allowed" : "pointer",
               }}
               onClick={doImport}
-              disabled={!!errors.length || busy}
+              disabled={valid === 0 || busy}
             >
-              {busy ? "Importing…" : `Import ${total} question${total === 1 ? "" : "s"}`}
+              {busy
+                ? "Importing…"
+                : invalid > 0
+                  ? `Import ${valid}/${total} questions`
+                  : `Import ${total} question${total === 1 ? "" : "s"}`}
             </button>
           </>
         )}
@@ -1420,7 +1434,11 @@ function UploadCourse({ course, onDone }) {
           <div>
             <div style={styles.committedText}>
               Imported {committed.questions_created} new · {committed.questions_updated}{" "}
-              updated across {committed.exams} exam{committed.exams === 1 ? "" : "s"}.
+              updated across {committed.exams} exam{committed.exams === 1 ? "" : "s"}
+              {committed.questions_skipped
+                ? ` · ${committed.questions_skipped} skipped`
+                : ""}
+              .
             </div>
             <button
               style={{ ...styles.shellCta, width: "100%" }}
@@ -1573,9 +1591,16 @@ export default function App() {
     if (auth) listCourses().then(setCourses);
   }, [auth]);
 
-  // Auto-select when the user owns exactly one course.
+  // Auto-select when the user owns exactly one course — but only once, on first
+  // load. Otherwise an explicit "Change course" would be undone immediately by
+  // this effect re-selecting the sole course.
+  const didAutoSelect = useRef(false);
   useEffect(() => {
-    if (courses && courses.length === 1 && !course) setCourse(courses[0]);
+    if (didAutoSelect.current) return;
+    if (courses && courses.length === 1 && !course) {
+      didAutoSelect.current = true;
+      setCourse(courses[0]);
+    }
   }, [courses, course]);
 
   useEffect(() => {
@@ -1712,7 +1737,10 @@ export default function App() {
         <div style={styles.eyebrow}>{course.name}</div>
         <h1 style={styles.shellHeading}>No questions yet</h1>
         <p style={styles.shellText}>This course has no exams or questions to study yet.</p>
-        <button style={styles.shellCta} onClick={changeCourse}>
+        <button style={styles.shellCta} onClick={() => setView("upload")}>
+          Upload questions
+        </button>
+        <button style={styles.formCancel} onClick={changeCourse}>
           Change course
         </button>
       </ShellCard>
