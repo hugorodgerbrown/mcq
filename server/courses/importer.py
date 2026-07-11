@@ -90,8 +90,11 @@ def _summarize(course, rows: list[dict]) -> dict:
     return {"totals": {"rows": len(rows), "new": new, "updated": updated}, "exams": exams_list}
 
 
-def parse_preview(course, file) -> dict:
-    rows, structural = _read_rows(file)
+def preview_rows(course, rows: list[dict], structural: list[RowError] | None = None) -> dict:
+    # Build the preview summary from already-parsed rows. Shared by the CSV
+    # upload path and the PDF extraction path — both normalise to the same row
+    # shape (Section, Category, Code, Question, A–D, Correct, Source).
+    structural = structural or []
     row_errors = validate_rows(rows)
     summary = _summarize(course, rows)
     _, invalid = _partition_rows(rows, row_errors)
@@ -101,12 +104,15 @@ def parse_preview(course, file) -> dict:
     return summary
 
 
-@transaction.atomic
-def commit_import(course, file, *, skip_invalid: bool = False) -> dict:
+def parse_preview(course, file) -> dict:
     rows, structural = _read_rows(file)
-    # Structural errors (e.g. missing headers) always block — nothing to salvage.
-    if structural:
-        raise ImportValidationError(structural)
+    return preview_rows(course, rows, structural)
+
+
+@transaction.atomic
+def commit_rows(course, rows: list[dict], *, skip_invalid: bool = False) -> dict:
+    # Validate and upsert already-parsed rows into Exam/Topic/Question. Shared
+    # commit path for CSV and PDF imports.
     row_errors = validate_rows(rows)
     skipped = 0
     if row_errors:
@@ -145,3 +151,11 @@ def commit_import(course, file, *, skip_invalid: bool = False) -> dict:
         "questions_updated": updated,
         "questions_skipped": skipped,
     }
+
+
+def commit_import(course, file, *, skip_invalid: bool = False) -> dict:
+    rows, structural = _read_rows(file)
+    # Structural errors (e.g. missing headers) always block — nothing to salvage.
+    if structural:
+        raise ImportValidationError(structural)
+    return commit_rows(course, rows, skip_invalid=skip_invalid)

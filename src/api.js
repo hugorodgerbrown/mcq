@@ -55,6 +55,28 @@ export async function importCommit(courseId, file, skipInvalid = false) {
   });
   return { ok: res.ok, data: await res.json() };
 }
+export async function startPdfImport(courseId, file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await req(`/api/v1/courses/${courseId}/import/pdf/`, {
+    method: "POST",
+    body: fd,
+  });
+  return { ok: res.ok, data: await res.json() };
+}
+export async function getPdfJob(courseId, jobId) {
+  const res = await req(`/api/v1/courses/${courseId}/import/pdf/${jobId}/`);
+  return res.ok ? res.json() : null;
+}
+export async function commitPdfJob(courseId, jobId, skipInvalid = false) {
+  const body = skipInvalid ? JSON.stringify({ skip_invalid: true }) : "{}";
+  const res = await req(`/api/v1/courses/${courseId}/import/pdf/${jobId}/commit/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+  });
+  return { ok: res.ok, data: await res.json() };
+}
 export async function updateExam(courseId, examId, exam_size, pass_mark) {
   const res = await req(`/api/v1/courses/${courseId}/exams/${examId}/`, {
     method: "PATCH",

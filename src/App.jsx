@@ -1,13 +1,16 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 
 import {
+  commitPdfJob,
   createCourse,
   getCourseContent,
   getMe,
+  getPdfJob,
   getSharedCourse,
   importCommit,
   importPreview,
   listCourses,
+  startPdfImport,
   updateExam,
 } from "./api.js";
 
@@ -20,6 +23,14 @@ function shareUrlFor(token) {
 // loaded on every deploy). The homepage links to it so visitors can try the app
 // without an account. Keep in sync with DEMO_SHARE_TOKEN in the fixture builder.
 const DEMO_SHARE_TOKEN = "d5c10000-0000-4000-8000-000000000001";
+
+// One-time keyframes for the PDF-import spinner (inline styles can't declare them).
+if (typeof document !== "undefined" && !document.getElementById("mcq-anim")) {
+  const s = document.createElement("style");
+  s.id = "mcq-anim";
+  s.textContent = "@keyframes mcqspin{to{transform:rotate(360deg)}}";
+  document.head.appendChild(s);
+}
 
 // Topic colours, cycled by topic index when mapping API content into decks.
 const DECK_PALETTE = [
@@ -1403,6 +1414,54 @@ const styles = {
     marginBottom: 16,
   },
 
+  // PDF import
+  pdfStatus: {
+    display: "flex",
+    alignItems: "center",
+    gap: 13,
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 14,
+    padding: "14px 16px",
+    marginBottom: 14,
+  },
+  pdfSpinner: {
+    width: 22,
+    height: 22,
+    borderRadius: "50%",
+    border: "2.5px solid rgba(204,255,102,0.25)",
+    borderTopColor: "#CCFF66",
+    animation: "mcqspin 0.8s linear infinite",
+    flexShrink: 0,
+  },
+  pdfStatusTitle: { fontSize: 14.5, fontWeight: 700, color: "#eaf0f9" },
+  pdfStatusSub: { fontSize: 12.5, color: "#8ea1c0", marginTop: 2, lineHeight: 1.4 },
+  reviewBox: {
+    background: "rgba(255,204,51,0.08)",
+    border: "1px solid rgba(255,204,51,0.35)",
+    borderRadius: 12,
+    padding: "12px 13px",
+    marginBottom: 14,
+  },
+  reviewBoxTitle: { fontSize: 13.5, fontWeight: 700, color: "#FFCC33" },
+  reviewBoxSub: { fontSize: 12.5, color: "#c9b78a", margin: "4px 0 8px", lineHeight: 1.45 },
+  reviewLineItem: {
+    fontSize: 12.5,
+    color: "#eaf0f9",
+    lineHeight: 1.4,
+    padding: "5px 0",
+    borderTop: "1px solid rgba(255,204,51,0.15)",
+  },
+  reviewLineCode: {
+    display: "block",
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
+    color: "#c9b78a",
+    marginBottom: 2,
+  },
+
   // exam settings screen
   settingsRow: {
     background: "rgba(255,255,255,0.045)",
@@ -1748,6 +1807,7 @@ function CreateCourse({ onCreated, onCancel }) {
 // Upload/import screen for a chosen course: pick a CSV, preview the parsed
 // summary (with row errors), import, then hand off to study.
 function UploadCourse({ course, onDone }) {
+  const [mode, setMode] = useState("csv"); // "csv" | "pdf"
   const [file, setFile] = useState(null);
   const [summary, setSummary] = useState(null);
   const [committed, setCommitted] = useState(null);
@@ -1791,7 +1851,27 @@ function UploadCourse({ course, onDone }) {
     <div style={styles.shellCenter}>
       <div style={{ ...styles.shellCard, maxWidth: 480, textAlign: "left" }}>
         <div style={styles.eyebrow}>{course.name}</div>
-        <h1 style={styles.shellHeading}>Upload questions</h1>
+        <h1 style={styles.shellHeading}>Add questions</h1>
+
+        <div style={{ ...styles.segment, marginBottom: 16 }}>
+          <button
+            style={{ ...styles.segBtn, ...(mode === "csv" ? styles.segActive : {}) }}
+            onClick={() => setMode("csv")}
+          >
+            CSV file
+          </button>
+          <button
+            style={{ ...styles.segBtn, ...(mode === "pdf" ? styles.segActive : {}) }}
+            onClick={() => setMode("pdf")}
+          >
+            PDF (beta)
+          </button>
+        </div>
+
+        {mode === "pdf" ? (
+          <PdfImport course={course} onDone={onDone} />
+        ) : (
+          <>
         <p style={{ ...styles.shellText, marginBottom: 18 }}>
           Choose a CSV to import exams, topics, and questions into this course.
         </p>
@@ -1884,8 +1964,211 @@ function UploadCourse({ course, onDone }) {
         )}
 
         {error && <p style={styles.formError}>{error}</p>}
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+// PDF import flow: pick a PDF, Claude extracts questions on the Batch API, poll
+// until ready, review the draft (answers the document didn't state are flagged),
+// then commit through the same importer path as CSV.
+function PdfImport({ course, onDone }) {
+  const [job, setJob] = useState(null); // {id, status, summary, error}
+  const [committed, setCommitted] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const pollRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(pollRef.current), []);
+
+  const poll = useCallback(
+    async (jobId) => {
+      const data = await getPdfJob(course.id, jobId);
+      if (!data) {
+        setError("Lost track of the import — please try again.");
+        return;
+      }
+      setJob(data);
+      if (data.status === "outlining" || data.status === "extracting") {
+        pollRef.current = setTimeout(() => poll(jobId), 4000);
+      }
+    },
+    [course.id]
+  );
+
+  const onPick = async (e) => {
+    const picked = e.target.files && e.target.files[0];
+    if (!picked) return;
+    setError("");
+    setCommitted(null);
+    setJob(null);
+    setBusy(true);
+    const { ok, data } = await startPdfImport(course.id, picked);
+    setBusy(false);
+    if (!ok) {
+      setError((data.errors && data.errors[0] && data.errors[0].message) || "Could not start import.");
+      return;
+    }
+    setJob(data);
+    poll(data.id);
+  };
+
+  const summary = job && job.status === "ready" ? job.summary : null;
+  const review = (summary && summary.review) || [];
+  const invalid = summary && summary.totals.invalid != null ? summary.totals.invalid : 0;
+  const valid = summary && summary.totals.valid != null ? summary.totals.valid : 0;
+
+  const doImport = async () => {
+    if (!summary || valid === 0) return;
+    setBusy(true);
+    setError("");
+    const { ok, data } = await commitPdfJob(course.id, job.id, invalid > 0);
+    setBusy(false);
+    if (ok) setCommitted(data);
+    else setError("Import failed — please try again.");
+  };
+
+  if (committed) {
+    return (
+      <div>
+        <div style={styles.committedText}>
+          Imported {committed.questions_created} new · {committed.questions_updated} updated across{" "}
+          {committed.exams} exam{committed.exams === 1 ? "" : "s"}
+          {committed.questions_skipped ? ` · ${committed.questions_skipped} skipped` : ""}.
+        </div>
+        <button style={{ ...styles.shellCta, width: "100%" }} onClick={() => onDone(course)}>
+          Study now
+        </button>
+      </div>
+    );
+  }
+
+  const working = job && (job.status === "outlining" || job.status === "extracting");
+
+  return (
+    <>
+      <p style={{ ...styles.shellText, marginBottom: 18 }}>
+        Upload a PDF and Claude will read it, split it into topics, and extract the questions and
+        answers for you to review before importing.
+      </p>
+
+      {!job && (
+        <label style={styles.fileBtn}>
+          {busy ? "Uploading…" : "Choose PDF"}
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            style={{ display: "none" }}
+            onChange={onPick}
+            disabled={busy}
+          />
+        </label>
+      )}
+
+      {working && (
+        <div style={styles.pdfStatus}>
+          <div style={styles.pdfSpinner} />
+          <div>
+            <div style={styles.pdfStatusTitle}>
+              {job.status === "outlining" ? "Reading the document…" : "Extracting questions…"}
+            </div>
+            <div style={styles.pdfStatusSub}>
+              This runs in the background and can take a few minutes. You can leave this open.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {job && job.status === "error" && (
+        <p style={styles.formError}>{job.error || "The import failed."}</p>
+      )}
+
+      {summary && (
+        <>
+          <div style={styles.summaryWrap}>
+            {summary.exams.map((ex) => (
+              <div key={ex.name} style={styles.summaryExam}>
+                <div style={styles.summaryExamName}>{ex.name || "(no section)"}</div>
+                {ex.topics.map((t) => (
+                  <div key={t.name} style={styles.summaryRow}>
+                    <span>{t.name || "(no topic)"}</span>
+                    <span style={styles.deckCount}>{t.questions}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+            <div style={styles.summaryTotals}>
+              {summary.totals.rows} questions · {summary.totals.new} new · {summary.totals.updated}{" "}
+              updated
+            </div>
+          </div>
+
+          {review.length > 0 && (
+            <div style={styles.reviewBox}>
+              <div style={styles.reviewBoxTitle}>
+                {review.length} answer{review.length === 1 ? "" : "s"} inferred — please check
+              </div>
+              <div style={styles.reviewBoxSub}>
+                These answers weren&apos;t stated in the document, so Claude chose the most likely
+                option. Verify them before importing.
+              </div>
+              {review.slice(0, 8).map((r) => (
+                <div key={r.code} style={styles.reviewLineItem}>
+                  <span style={styles.reviewLineCode}>
+                    {r.topic} · p.{r.page}
+                  </span>
+                  <span>
+                    {r.text} → <strong>{r.correct}</strong>{" "}
+                    <span style={{ opacity: 0.7 }}>({r.confidence})</span>
+                  </span>
+                </div>
+              ))}
+              {review.length > 8 && (
+                <div style={styles.reviewBoxSub}>…and {review.length - 8} more.</div>
+              )}
+            </div>
+          )}
+
+          {summary.errors && summary.errors.length > 0 && (
+            <div style={styles.errorList}>
+              {summary.errors.map((er, i) => (
+                <div key={i} style={styles.errorRow}>
+                  <span style={styles.errorRowNum}>Row {er.row}</span>
+                  <span>{er.message}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {invalid > 0 && valid > 0 && (
+            <p style={styles.shellText}>
+              {invalid} question{invalid === 1 ? "" : "s"} with errors will be skipped.
+            </p>
+          )}
+
+          <button
+            style={{
+              ...styles.shellCta,
+              width: "100%",
+              opacity: valid === 0 || busy ? 0.5 : 1,
+              cursor: valid === 0 ? "not-allowed" : "pointer",
+            }}
+            onClick={doImport}
+            disabled={valid === 0 || busy}
+          >
+            {busy
+              ? "Importing…"
+              : invalid > 0
+                ? `Import ${valid}/${summary.totals.rows} questions`
+                : `Import ${summary.totals.rows} question${summary.totals.rows === 1 ? "" : "s"}`}
+          </button>
+        </>
+      )}
+
+      {error && <p style={styles.formError}>{error}</p>}
+    </>
   );
 }
 
