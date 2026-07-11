@@ -42,6 +42,12 @@ services:
         sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
+      # Account email verification: "mandatory" (default), "optional", or
+      # "none". Set to "none" to let accounts sign in without verifying (handy
+      # for a test environment before SMTP is wired up). Without an EMAIL_HOST,
+      # verification emails print to the logs instead of failing.
+      - key: ACCOUNT_EMAIL_VERIFICATION
+        sync: false
       # Anthropic API key for the PDF-to-questions importer. Without it, PDF
       # import is disabled (CSV import and everything else still work).
       - key: ANTHROPIC_API_KEY
