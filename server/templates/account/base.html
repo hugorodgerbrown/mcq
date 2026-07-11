@@ -78,6 +78,9 @@
             .messages { list-style: none; padding: 0; margin: 0 0 16px; }
             .messages li { color: var(--accent); font-size: 14px; }
             .helptext { color: var(--muted); font-size: 12px; }
+            .auth-home { margin: 16px 0 0; text-align: center; }
+            .auth-home a { color: var(--muted); font-size: 13px; text-decoration: none; }
+            .auth-home a:hover { color: var(--accent); }
         </style>
     </head>
     <body data-auth-base="dsc1">
@@ -88,6 +91,9 @@
                 </ul>
             {% endif %}
             {% block content %}{% endblock content %}
+            <p class="auth-home">
+                <a href="/">← Back to DSC1</a>
+            </p>
         </main>
     </body>
 </html>

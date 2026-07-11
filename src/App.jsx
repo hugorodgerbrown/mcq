@@ -98,6 +98,7 @@ function StudyApp({
   onSettings,
   shareUrl = null,
   shared = false,
+  auth = null,
 }) {
   const [track, setTrack] = useState(trackKeys[0]); // which exam within the course
   // deck can be a cat string, "ALL", "ALL_SPECIES", or null (home)
@@ -282,29 +283,15 @@ function StudyApp({
     return (
       <div style={styles.root}>
         <div style={styles.wrap}>
-          <div style={styles.topBar}>
-            <span style={styles.topBarName}>{courseName}</span>
-            <span style={styles.topBarLinks}>
-              {shareUrl && <ShareButton url={shareUrl} />}
-              {shared ? (
-                <a style={styles.linkBtn} href="/accounts/login/">
-                  Sign in
-                </a>
-              ) : (
-                <>
-                  <button style={styles.linkBtn} onClick={onSettings}>
-                    Settings
-                  </button>
-                  <button style={styles.linkBtn} onClick={onChangeCourse}>
-                    Change course
-                  </button>
-                  <a style={styles.linkBtn} href="/accounts/logout/">
-                    Log out
-                  </a>
-                </>
-              )}
-            </span>
-          </div>
+          <Header
+            auth={shared ? null : auth}
+            right={shareUrl && <ShareButton url={shareUrl} />}
+            items={[
+              { label: "My courses", onClick: onChangeCourse },
+              { label: "Exam settings", onClick: onSettings },
+              { label: "Account", href: "/accounts/email/" },
+            ]}
+          />
           <header style={styles.homeHeader}>
             <div style={styles.eyebrow}>{courseName}</div>
             <h1 style={styles.homeTitle}>{activeTrack.title}</h1>
@@ -882,6 +869,180 @@ const styles = {
     textDecoration: "none",
     outline: "none",
   },
+
+  // global header / nav
+  appHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 22,
+  },
+  brand: {
+    fontSize: 15,
+    fontWeight: 800,
+    letterSpacing: "0.02em",
+    color: "#f2f5fa",
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+  },
+  brandThin: { fontWeight: 500, color: "#7f93b4" },
+  headerRight: { display: "flex", alignItems: "center", gap: 12, flexShrink: 0 },
+  navLink: {
+    color: "#cdd8ea",
+    fontSize: 13.5,
+    fontWeight: 600,
+    textDecoration: "none",
+    outline: "none",
+  },
+  navCta: {
+    background: "#CCFF66",
+    color: "#0a1424",
+    fontSize: 13.5,
+    fontWeight: 700,
+    padding: "8px 16px",
+    borderRadius: 999,
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+  },
+
+  // account dropdown menu
+  menuWrap: { position: "relative", display: "inline-flex" },
+  avatarBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: 999,
+    padding: "4px 8px 4px 4px",
+    cursor: "pointer",
+    outline: "none",
+  },
+  avatar: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 26,
+    height: 26,
+    borderRadius: "50%",
+    background: "#CCFF66",
+    color: "#0a1424",
+    fontSize: 13,
+    fontWeight: 800,
+  },
+  caret: { color: "#8fa3c4", fontSize: 11 },
+  menuBackdrop: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 10,
+    background: "transparent",
+  },
+  menu: {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    right: 0,
+    zIndex: 11,
+    minWidth: 184,
+    background: "#0e1a30",
+    border: "1px solid rgba(255,255,255,0.14)",
+    borderRadius: 12,
+    padding: 6,
+    boxShadow: "0 20px 50px -20px rgba(0,0,0,0.8)",
+  },
+  menuEmail: {
+    fontSize: 12,
+    color: "#7f93b4",
+    padding: "6px 10px 8px",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    marginBottom: 4,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  menuItem: {
+    display: "block",
+    width: "100%",
+    textAlign: "left",
+    padding: "9px 10px",
+    borderRadius: 8,
+    color: "#dbe4f2",
+    fontSize: 13.5,
+    fontWeight: 600,
+    textDecoration: "none",
+    cursor: "pointer",
+  },
+  menuItemBtn: { background: "none", border: "none", outline: "none", fontFamily: "inherit" },
+
+  // landing page
+  landingRoot: {
+    minHeight: "100vh",
+    background: "radial-gradient(120% 100% at 50% 0%, #12203a 0%, #0a1424 55%, #060c17 100%)",
+    color: "#f2f5fa",
+    fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+    padding: "24px 16px 48px",
+    boxSizing: "border-box",
+  },
+  landingMain: { width: "100%", maxWidth: 880, margin: "0 auto" },
+  hero: { textAlign: "center", padding: "36px 0 30px" },
+  heroTitle: {
+    fontSize: 44,
+    lineHeight: 1.08,
+    fontWeight: 800,
+    letterSpacing: "-0.02em",
+    margin: "10px auto 0",
+    maxWidth: 640,
+  },
+  heroSub: {
+    fontSize: 17,
+    lineHeight: 1.55,
+    color: "#aab8d1",
+    margin: "18px auto 0",
+    maxWidth: 560,
+  },
+  heroCtas: {
+    display: "flex",
+    gap: 12,
+    justifyContent: "center",
+    flexWrap: "wrap",
+    marginTop: 28,
+  },
+  ctaPrimary: {
+    background: "#CCFF66",
+    color: "#0a1424",
+    fontSize: 15.5,
+    fontWeight: 700,
+    padding: "13px 26px",
+    borderRadius: 999,
+    textDecoration: "none",
+  },
+  ctaSecondary: {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.16)",
+    color: "#eaf0f9",
+    fontSize: 15.5,
+    fontWeight: 600,
+    padding: "13px 26px",
+    borderRadius: 999,
+    textDecoration: "none",
+  },
+  heroFoot: { fontSize: 13.5, color: "#7f93b4", marginTop: 22 },
+  features: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+    gap: 14,
+    marginTop: 14,
+  },
+  featureCard: {
+    background: "rgba(255,255,255,0.045)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 16,
+    padding: "20px 20px 22px",
+    textAlign: "left",
+  },
+  featureTitle: { fontSize: 16.5, fontWeight: 700, margin: "0 0 8px" },
+  featureBody: { fontSize: 14, lineHeight: 1.5, color: "#8ea1c0", margin: 0 },
+
   shellCenter: {
     minHeight: "100vh",
     display: "flex",
@@ -1339,11 +1500,166 @@ function ShareButton({ url }) {
   );
 }
 
+// Authenticated account dropdown: an avatar button that opens a small menu of
+// account/navigation links plus Log out. A transparent backdrop closes it on
+// any outside click.
+function AccountMenu({ email, items }) {
+  const [open, setOpen] = useState(false);
+  const links = [
+    ...(items || [
+      { label: "My courses", href: "/" },
+      { label: "Account", href: "/accounts/email/" },
+    ]),
+    { label: "Log out", href: "/accounts/logout/" },
+  ];
+  const initial = (email || "?").trim().charAt(0).toUpperCase() || "?";
+
+  return (
+    <div style={styles.menuWrap}>
+      <button
+        style={styles.avatarBtn}
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        title={email || "Account"}
+      >
+        <span style={styles.avatar}>{initial}</span>
+        <span style={styles.caret}>▾</span>
+      </button>
+      {open && (
+        <>
+          <div style={styles.menuBackdrop} onClick={() => setOpen(false)} />
+          <div style={styles.menu} role="menu">
+            {email && <div style={styles.menuEmail}>{email}</div>}
+            {links.map((it, i) =>
+              it.href ? (
+                <a key={i} style={styles.menuItem} href={it.href} role="menuitem">
+                  {it.label}
+                </a>
+              ) : (
+                <button
+                  key={i}
+                  style={{ ...styles.menuItem, ...styles.menuItemBtn }}
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    it.onClick && it.onClick();
+                  }}
+                >
+                  {it.label}
+                </button>
+              )
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Global top nav. Anonymous visitors get Sign in + Get started; authenticated
+// users get the account menu. `right` is an optional slot for page-specific
+// actions (e.g. the Share button) shown left of the account cluster.
+function Header({ auth, items, right = null }) {
+  return (
+    <header style={styles.appHeader}>
+      <a href="/" style={styles.brand}>
+        DSC1 <span style={styles.brandThin}>Question Bank</span>
+      </a>
+      <div style={styles.headerRight}>
+        {right}
+        {auth ? (
+          <AccountMenu email={auth.email} items={items} />
+        ) : (
+          <>
+            <a style={styles.navLink} href="/accounts/login/">
+              Sign in
+            </a>
+            <a style={styles.navCta} href="/accounts/signup/">
+              Get started
+            </a>
+          </>
+        )}
+      </div>
+    </header>
+  );
+}
+
+const LANDING_FEATURES = [
+  {
+    title: "Three ways to study",
+    body: "Drill with instant-feedback multiple choice, flip self-graded flashcards, or sit a timed mock exam scored against your own pass mark.",
+  },
+  {
+    title: "Bring your own questions",
+    body: "Import a CSV of questions, topics, and exams to spin up a course in seconds. Set the mock size and pass mark for each exam.",
+  },
+  {
+    title: "Share in a click",
+    body: "Every course gets a fixed share link. Send it to classmates and they can start answering questions instantly — no account required.",
+  },
+];
+
+// Default marketing homepage for anonymous visitors: explains the proposition
+// and points people at registration. Studying itself stays open to everyone via
+// share links; only creating courses needs an account.
+function Landing() {
+  return (
+    <div style={styles.landingRoot}>
+      <Header auth={null} />
+      <main style={styles.landingMain}>
+        <section style={styles.hero}>
+          <div style={styles.eyebrow}>DSC1 · QUESTION BANK</div>
+          <h1 style={styles.heroTitle}>Build your own MCQ exam revision tool</h1>
+          <p style={styles.heroSub}>
+            Create a course, import your questions, and revise with multiple-choice
+            drills, flashcards, and timed mock exams. Register to build and manage your
+            own courses — sharing and studying stay free for everyone.
+          </p>
+          <div style={styles.heroCtas}>
+            <a style={styles.ctaPrimary} href="/accounts/signup/">
+              Get started — it&apos;s free
+            </a>
+            <a style={styles.ctaSecondary} href="/accounts/login/">
+              Sign in
+            </a>
+          </div>
+          <p style={styles.heroFoot}>
+            Got a share link? You can answer questions on any shared course without
+            signing up.
+          </p>
+        </section>
+        <section style={styles.features}>
+          {LANDING_FEATURES.map((f) => (
+            <div key={f.title} style={styles.featureCard}>
+              <h3 style={styles.featureTitle}>{f.title}</h3>
+              <p style={styles.featureBody}>{f.body}</p>
+            </div>
+          ))}
+        </section>
+      </main>
+    </div>
+  );
+}
+
 // Centered themed card used by every shell screen (loading / login / picker).
 function ShellCard({ children }) {
   return (
     <div style={styles.shellCenter}>
       <div style={styles.shellCard}>{children}</div>
+    </div>
+  );
+}
+
+// Authenticated shell screen: the global header on top with a themed card below
+// it (course picker, empty states). Keeps the account menu reachable everywhere.
+function ShellPage({ auth, children }) {
+  return (
+    <div style={styles.root}>
+      <div style={styles.wrap}>
+        <Header auth={auth} />
+        <div style={{ ...styles.shellCard, margin: "30px auto 0" }}>{children}</div>
+      </div>
     </div>
   );
 }
@@ -1800,16 +2116,7 @@ function OwnerApp() {
   }
 
   if (auth === false) {
-    return (
-      <ShellCard>
-        <div style={styles.eyebrow}>DSC1 · QUESTION BANK</div>
-        <h1 style={styles.shellHeading}>Sign in to study</h1>
-        <p style={styles.shellText}>Log in to load your course and start practising.</p>
-        <a style={styles.shellCta} href="/accounts/login/">
-          Log in
-        </a>
-      </ShellCard>
-    );
+    return <Landing />;
   }
 
   if (courses === null) {
@@ -1851,7 +2158,7 @@ function OwnerApp() {
 
   if (courses.length === 0) {
     return (
-      <ShellCard>
+      <ShellPage auth={auth}>
         <div style={styles.eyebrow}>DSC1 · QUESTION BANK</div>
         <h1 style={styles.shellHeading}>No courses yet</h1>
         <p style={styles.shellText}>
@@ -1860,16 +2167,13 @@ function OwnerApp() {
         <button style={styles.shellCta} onClick={() => setView("create")}>
           Create your first course
         </button>
-        <button style={styles.formCancel} onClick={() => (window.location.href = "/accounts/logout/")}>
-          Log out
-        </button>
-      </ShellCard>
+      </ShellPage>
     );
   }
 
   if (!course) {
     return (
-      <ShellCard>
+      <ShellPage auth={auth}>
         <div style={styles.eyebrow}>DSC1 · QUESTION BANK</div>
         <h1 style={styles.shellHeading}>Choose a course</h1>
         <p style={styles.shellText}>Pick which course you want to study.</p>
@@ -1880,10 +2184,10 @@ function OwnerApp() {
             </button>
           ))}
         </div>
-        <button style={styles.formCancel} onClick={() => setView("create")}>
+        <button style={styles.shellCta} onClick={() => setView("create")}>
           New course
         </button>
-      </ShellCard>
+      </ShellPage>
     );
   }
 
@@ -1910,7 +2214,7 @@ function OwnerApp() {
 
   if (trackKeys.length === 0) {
     return (
-      <ShellCard>
+      <ShellPage auth={auth}>
         <div style={styles.eyebrow}>{course.name}</div>
         <h1 style={styles.shellHeading}>No questions yet</h1>
         <p style={styles.shellText}>This course has no exams or questions to study yet.</p>
@@ -1920,7 +2224,7 @@ function OwnerApp() {
         <button style={styles.formCancel} onClick={changeCourse}>
           Change course
         </button>
-      </ShellCard>
+      </ShellPage>
     );
   }
 
@@ -1932,6 +2236,7 @@ function OwnerApp() {
       onChangeCourse={changeCourse}
       onSettings={() => setView("settings")}
       shareUrl={content.share_token ? shareUrlFor(content.share_token) : null}
+      auth={auth}
     />
   );
 }
