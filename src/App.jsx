@@ -16,6 +16,11 @@ function shareUrlFor(token) {
   return `${window.location.origin}/shared/${token}`;
 }
 
+// Fixed share token of the seeded DSC1 demo course (courses/fixtures/dsc1_demo.json,
+// loaded on every deploy). The homepage links to it so visitors can try the app
+// without an account. Keep in sync with DEMO_SHARE_TOKEN in the fixture builder.
+const DEMO_SHARE_TOKEN = "d5c10000-0000-4000-8000-000000000001";
+
 // Topic colours, cycled by topic index when mapping API content into decks.
 const DECK_PALETTE = [
   "#CCFF66",
@@ -1620,13 +1625,13 @@ function Landing() {
             <a style={styles.ctaPrimary} href="/accounts/signup/">
               Get started — it&apos;s free
             </a>
-            <a style={styles.ctaSecondary} href="/accounts/login/">
-              Sign in
+            <a style={styles.ctaSecondary} href={shareUrlFor(DEMO_SHARE_TOKEN)}>
+              Try the demo →
             </a>
           </div>
           <p style={styles.heroFoot}>
-            Got a share link? You can answer questions on any shared course without
-            signing up.
+            The demo is a fully playable Deer Stalking Certificate course — no account
+            needed. Sign up when you want to build your own.
           </p>
         </section>
         <section style={styles.features}>
