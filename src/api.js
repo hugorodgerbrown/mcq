@@ -24,6 +24,10 @@ export async function getCourseContent(id) {
   const res = await req(`/api/v1/courses/${id}/content/`);
   return res.ok ? res.json() : null;
 }
+export async function getSharedCourse(token) {
+  const res = await req(`/api/v1/courses/shared/${token}/`);
+  return res.ok ? res.json() : null;
+}
 export async function createCourse(name, rubric) {
   const res = await req("/api/v1/courses/", {
     method: "POST",

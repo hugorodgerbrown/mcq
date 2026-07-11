@@ -41,4 +41,4 @@ class CourseContentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ["id", "name", "exams"]
+        fields = ["id", "name", "share_token", "exams"]

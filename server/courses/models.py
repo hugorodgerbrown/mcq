@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 
@@ -8,6 +10,9 @@ class Course(models.Model):
     )
     name = models.CharField(max_length=200)
     rubric = models.TextField(blank=True)
+    # Stable, unguessable token for the public share link. Fixed for the life of
+    # the course so a shared URL never changes.
+    share_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

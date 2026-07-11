@@ -4,11 +4,17 @@ import {
   createCourse,
   getCourseContent,
   getMe,
+  getSharedCourse,
   importCommit,
   importPreview,
   listCourses,
   updateExam,
 } from "./api.js";
+
+// Build the public, static share URL for a course from its share token.
+function shareUrlFor(token) {
+  return `${window.location.origin}/shared/${token}`;
+}
 
 // Topic colours, cycled by topic index when mapping API content into decks.
 const DECK_PALETTE = [
@@ -84,7 +90,15 @@ function shuffle(arr) {
 
 const LETTERS = ["A", "B", "C", "D"];
 
-function StudyApp({ tracks, trackKeys, courseName, onChangeCourse, onSettings }) {
+function StudyApp({
+  tracks,
+  trackKeys,
+  courseName,
+  onChangeCourse,
+  onSettings,
+  shareUrl = null,
+  shared = false,
+}) {
   const [track, setTrack] = useState(trackKeys[0]); // which exam within the course
   // deck can be a cat string, "ALL", "ALL_SPECIES", or null (home)
   const [deck, setDeck] = useState(null);
@@ -271,15 +285,24 @@ function StudyApp({ tracks, trackKeys, courseName, onChangeCourse, onSettings })
           <div style={styles.topBar}>
             <span style={styles.topBarName}>{courseName}</span>
             <span style={styles.topBarLinks}>
-              <button style={styles.linkBtn} onClick={onSettings}>
-                Settings
-              </button>
-              <button style={styles.linkBtn} onClick={onChangeCourse}>
-                Change course
-              </button>
-              <a style={styles.linkBtn} href="/accounts/logout/">
-                Log out
-              </a>
+              {shareUrl && <ShareButton url={shareUrl} />}
+              {shared ? (
+                <a style={styles.linkBtn} href="/accounts/login/">
+                  Sign in
+                </a>
+              ) : (
+                <>
+                  <button style={styles.linkBtn} onClick={onSettings}>
+                    Settings
+                  </button>
+                  <button style={styles.linkBtn} onClick={onChangeCourse}>
+                    Change course
+                  </button>
+                  <a style={styles.linkBtn} href="/accounts/logout/">
+                    Log out
+                  </a>
+                </>
+              )}
             </span>
           </div>
           <header style={styles.homeHeader}>
@@ -832,7 +855,22 @@ const styles = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-  topBarLinks: { display: "flex", gap: 14, flexShrink: 0 },
+  topBarLinks: { display: "flex", gap: 14, flexShrink: 0, alignItems: "center" },
+  shareBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    background: "rgba(204,255,102,0.1)",
+    border: "1px solid rgba(204,255,102,0.35)",
+    borderRadius: 999,
+    padding: "5px 11px",
+    color: "#CCFF66",
+    fontSize: 12.5,
+    fontWeight: 700,
+    cursor: "pointer",
+    outline: "none",
+    whiteSpace: "nowrap",
+  },
   linkBtn: {
     background: "none",
     border: "none",
@@ -1226,6 +1264,81 @@ function SourceBadge({ source }) {
   return <span style={styles.sourceBadge}>Source: {source}</span>;
 }
 
+// Classic three-node share glyph, tinted via currentColor.
+function ShareIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+      <line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
+    </svg>
+  );
+}
+
+// Share button: copies the course's static share link to the clipboard and
+// flashes "Copied!" for a moment. Falls back to a hidden textarea + execCommand
+// when the async Clipboard API isn't available (e.g. non-secure contexts).
+function ShareButton({ url }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = useCallback(async () => {
+    let ok = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+        ok = true;
+      }
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } catch {
+        /* nothing else to try */
+      }
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+  }, [url]);
+
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 1800);
+    return () => clearTimeout(t);
+  }, [copied]);
+
+  return (
+    <button
+      style={styles.shareBtn}
+      onClick={copy}
+      title="Copy share link"
+      aria-label="Copy share link"
+    >
+      <ShareIcon />
+      {copied ? "Copied!" : "Share"}
+    </button>
+  );
+}
+
 // Centered themed card used by every shell screen (loading / login / picker).
 function ShellCard({ children }) {
   return (
@@ -1572,9 +1685,73 @@ function ExamSettings({ course, exams, onSaved, onBack }) {
   );
 }
 
+// Anonymous, read-only entry reached via a course's static share link
+// (/shared/<token>). Loads the course content from the public endpoint and
+// hands it to the study UI in "shared" mode — no auth, and because the study
+// UI keeps scores in memory only, nothing is stored for these sessions.
+function SharedCourse({ token }) {
+  const [content, setContent] = useState(null); // null=loading, false=not found, object=loaded
+
+  useEffect(() => {
+    getSharedCourse(token).then((c) => setContent(c || false));
+  }, [token]);
+
+  if (content === null) {
+    return (
+      <ShellCard>
+        <p style={styles.shellText}>Loading…</p>
+      </ShellCard>
+    );
+  }
+
+  if (content === false) {
+    return (
+      <ShellCard>
+        <div style={styles.eyebrow}>DSC1 · QUESTION BANK</div>
+        <h1 style={styles.shellHeading}>Course not found</h1>
+        <p style={styles.shellText}>This share link is invalid or no longer available.</p>
+        <a style={styles.shellCta} href="/">
+          Go home
+        </a>
+      </ShellCard>
+    );
+  }
+
+  const { tracks, trackKeys } = contentToTracks(content);
+
+  if (trackKeys.length === 0) {
+    return (
+      <ShellCard>
+        <div style={styles.eyebrow}>{content.name}</div>
+        <h1 style={styles.shellHeading}>No questions yet</h1>
+        <p style={styles.shellText}>This course has no questions to study yet.</p>
+      </ShellCard>
+    );
+  }
+
+  return (
+    <StudyApp
+      tracks={tracks}
+      trackKeys={trackKeys}
+      courseName={content.name}
+      shared
+      shareUrl={shareUrlFor(token)}
+    />
+  );
+}
+
+// Top-level router: a /shared/<token> path is the public share view; anything
+// else is the owner's authenticated app. Kept hook-free so the two branches
+// never share hook state.
+export default function App() {
+  const match = window.location.pathname.match(/^\/shared\/([0-9a-fA-F-]+)\/?$/);
+  if (match) return <SharedCourse token={match[1]} />;
+  return <OwnerApp />;
+}
+
 // Outer shell: gates on auth, picks a course, loads its content from the JSON
 // API, then hands the mapped tracks to the study UI (StudyApp).
-export default function App() {
+function OwnerApp() {
   const [auth, setAuth] = useState(null); // null=loading, false=anon, object=user
   const [courses, setCourses] = useState(null); // null=not loaded yet
   const [course, setCourse] = useState(null); // selected course {id, name, ...}
@@ -1754,6 +1931,7 @@ export default function App() {
       courseName={course.name}
       onChangeCourse={changeCourse}
       onSettings={() => setView("settings")}
+      shareUrl={content.share_token ? shareUrlFor(content.share_token) : null}
     />
   );
 }
