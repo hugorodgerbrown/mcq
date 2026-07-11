@@ -10,6 +10,7 @@ dependencies = [
     "gunicorn>=23.0",
     "psycopg[binary]>=3.2",
     "django-allauth>=65,<66",
+    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]
