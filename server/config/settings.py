@@ -58,20 +58,24 @@ AUTHENTICATION_BACKENDS = [
 # django-allauth account configuration (email-as-identifier, no username).
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+# "mandatory" (verify before first login), "optional", or "none" (skip). Set
+# ACCOUNT_EMAIL_VERIFICATION=none to bypass verification in a test environment.
+ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
 ACCOUNT_UNIQUE_EMAIL = True
 LOGIN_REDIRECT_URL = "/"
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"
 
 
 def _resolve_email_backend(debug: bool, env: Mapping[str, str]) -> str:
+    # An explicit EMAIL_BACKEND always wins. Otherwise use SMTP only when an
+    # EMAIL_HOST is actually configured — without one, the SMTP backend blocks
+    # on a dead socket and crashes signup/login, so fall back to console (the
+    # verification link is printed to the logs) instead of 500ing.
     if "EMAIL_BACKEND" in env:
         return env["EMAIL_BACKEND"]
-    return (
-        "django.core.mail.backends.console.EmailBackend"
-        if debug
-        else "django.core.mail.backends.smtp.EmailBackend"
-    )
+    if debug or not env.get("EMAIL_HOST"):
+        return "django.core.mail.backends.console.EmailBackend"
+    return "django.core.mail.backends.smtp.EmailBackend"
 
 
 EMAIL_BACKEND = _resolve_email_backend(DEBUG, os.environ)
