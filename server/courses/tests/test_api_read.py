@@ -48,3 +48,26 @@ class ReadApiTests(APITestCase):
             {"A": "a", "B": "b", "C": "c", "D": "d"},
         )
         self.assertEqual(data["exams"][0]["pass_mark"], 80)
+
+    def test_content_exposes_share_token_to_owner(self):
+        self.client.force_login(self.owner)
+        data = self.client.get(f"/api/v1/courses/{self.course.pk}/content/").json()
+        self.assertEqual(data["share_token"], str(self.course.share_token))
+
+    def test_shared_content_is_public(self):
+        url = f"/api/v1/courses/shared/{self.course.share_token}/"
+        # No login required — anyone with the token can read the content.
+        data = self.client.get(url).json()
+        self.assertEqual(data["name"], "DSC1")
+        self.assertEqual(
+            data["exams"][0]["topics"][0]["questions"][0]["options"],
+            {"A": "a", "B": "b", "C": "c", "D": "d"},
+        )
+
+    def test_shared_content_unknown_token_404(self):
+        self.assertEqual(
+            self.client.get(
+                "/api/v1/courses/shared/00000000-0000-0000-0000-000000000000/"
+            ).status_code,
+            404,
+        )

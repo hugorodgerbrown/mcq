@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -39,6 +39,17 @@ def course_content(request: Request, pk: int) -> Response:
     course = _owned_course(request, pk)
     if course is None:
         return Response(status=status.HTTP_403_FORBIDDEN)
+    return Response(CourseContentSerializer(course).data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def shared_course_content(request: Request, token: str) -> Response:
+    # Public, read-only view of a course reached via its share link. No auth,
+    # no ownership check — anyone with the token can study the questions. The
+    # study UI keeps scores in memory only, so nothing is persisted for these
+    # anonymous sessions.
+    course = get_object_or_404(Course, share_token=token)
     return Response(CourseContentSerializer(course).data)
 
 
