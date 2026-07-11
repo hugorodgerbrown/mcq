@@ -28,8 +28,12 @@ services:
         fromDatabase:
           name: mcq-db
           property: connectionString
-      # Email (django-allauth verification / password reset). Provide these to send
-      # real mail; until then production has no SMTP host and sends nothing.
+      # Email (django-allauth verification / password reset). Render blocks
+      # outbound SMTP ports, so for Resend set EMAIL_HOST=smtp.resend.com and
+      # EMAIL_HOST_PASSWORD=<re_… key> (or just RESEND_API_KEY below) — mail is
+      # sent over Resend's HTTPS API instead. The sender domain in
+      # DEFAULT_FROM_EMAIL must be verified in Resend. With no host set,
+      # verification links print to the logs instead of failing.
       - key: EMAIL_HOST
         sync: false
       - key: EMAIL_PORT
@@ -47,6 +51,11 @@ services:
       # for a test environment before SMTP is wired up). Without an EMAIL_HOST,
       # verification emails print to the logs instead of failing.
       - key: ACCOUNT_EMAIL_VERIFICATION
+        sync: false
+      # Optional: Resend API key. If set, mail is sent via Resend's HTTPS API.
+      # Not needed if you already provide it as EMAIL_HOST_PASSWORD with
+      # EMAIL_HOST=smtp.resend.com.
+      - key: RESEND_API_KEY
         sync: false
       # Anthropic API key for the PDF-to-questions importer. Without it, PDF
       # import is disabled (CSV import and everything else still work).
