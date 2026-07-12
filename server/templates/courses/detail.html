@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ course.name }} — DSC1 Question Bank{% endblock %}
+{% block content %}
+<div class="row-between" style="margin: 20px 0;">
+  <div>
+    <div class="eyebrow">{{ course.name }}</div>
+    <h1 class="page-title">Course dashboard</h1>
+  </div>
+  <div class="toolbar" style="margin: 0;">
+    <a class="btn btn-primary" href="{% url 'courses:study' course.pk %}">Study</a>
+    <a class="btn btn-ghost" href="{% url 'courses:import' course.pk %}">Import</a>
+  </div>
+</div>
+
+<div class="card" x-data="{ copied: false }" style="margin-bottom: 16px;">
+  <div class="row-between">
+    <div>
+      <strong>Share link</strong>
+      <p class="muted2" style="margin: 4px 0 0; font-size: 13px;">Anyone with this link can study — no account needed.</p>
+    </div>
+    <button class="btn btn-sm"
+            @click="navigator.clipboard.writeText('{{ share_url }}'); copied = true; setTimeout(() => copied = false, 1500)">
+      <span x-text="copied ? 'Copied!' : 'Copy link'">Copy link</span>
+    </button>
+  </div>
+</div>
+
+{% if exams %}
+  {% for row in exams %}
+    <div class="card" style="margin-bottom: 14px;">
+      <div class="row-between">
+        <div>
+          <strong>{{ row.exam.name }}</strong>
+          <span class="muted2" style="margin-left: 8px;">{{ row.total }} question{{ row.total|pluralize }}</span>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="{% url 'courses:exam-settings' course.pk row.exam.pk %}">
+          Exam settings ({{ row.exam.exam_size }} Q · {{ row.exam.pass_mark }}%)
+        </a>
+      </div>
+      {% if row.topics %}
+        <div class="stack" style="margin-top: 12px; gap: 6px;">
+          {% for t in row.topics %}
+            <div class="row-between" style="font-size: 14px; color: var(--muted);">
+              <span>{{ t.name }}</span><span class="count">{{ t.count }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="card" style="text-align: center;">
+    <p class="muted">No questions yet. Import a CSV or PDF to get started.</p>
+    <a class="btn btn-primary" href="{% url 'courses:import' course.pk %}" style="margin-top: 10px;">Import questions</a>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Create your account — DSC1 Question Bank{% endblock %}
+{% block content %}
+<div class="center-screen">
+  <form class="center-card" method="post">
+    {% csrf_token %}
+    <div class="eyebrow">DSC1 · QUESTION BANK</div>
+    <h1 class="page-title">Create your account</h1>
+    <p class="muted">Register to build and manage your own courses.</p>
+    <label class="field">
+      <span class="label">Email</span>
+      <input type="email" name="email" autocomplete="email" autofocus
+             value="{{ form.email.value|default:'' }}" required />
+      {% for e in form.email.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </label>
+    <label class="field">
+      <span class="label">Password</span>
+      <input type="password" name="password" autocomplete="new-password"
+             placeholder="At least 8 characters" required />
+      {% for e in form.password.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </label>
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;">Create account</button>
+    <p class="muted" style="margin-top: 16px;">
+      Already have an account? <a class="nav-link" href="{% url 'login' %}">Sign in</a>
+    </p>
+  </form>
+</div>
+{% endblock %}

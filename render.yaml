@@ -1,6 +1,12 @@
-# Render blueprint — full Django web service + managed Postgres, single origin.
-# The web service builds the React SPA, collects it as static, runs migrations,
-# and serves it via gunicorn; DATABASE_URL is wired to the managed Postgres below.
+# Render blueprint — Django web service + managed Postgres, single origin.
+# The app is server-rendered (Django templates + HTMX + Alpine); there is no
+# separate frontend build. The build installs deps, collects static, runs
+# migrations, loads the demo course and ensures the admin superuser; gunicorn
+# serves it. DATABASE_URL is wired to the managed Postgres below.
+#
+# NOTE: editing this file does not update an already-created Render service —
+# sync the blueprint (or edit the service's Build Command in Settings) for
+# changes here to take effect.
 databases:
   - name: mcq-db
     databaseName: mcq
@@ -13,7 +19,7 @@ services:
     runtime: python
     rootDir: server # Python version comes from server/.python-version (3.12)
     plan: free # free web services sleep after inactivity — bump for production
-    buildCommand: "cd .. && npm install && npm run build && cd server && pip install -e . && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py loaddata dsc1_demo && python manage.py ensure_superuser"
+    buildCommand: "pip install -e . && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py loaddata dsc1_demo && python manage.py ensure_superuser"
     startCommand: "gunicorn config.wsgi:application"
     envVars:
       - key: DEBUG

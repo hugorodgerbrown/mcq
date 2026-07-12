@@ -1,0 +1,29 @@
+{% comment %}Shared preview summary for CSV upload and PDF extraction.{% endcomment %}
+<div class="toolbar" style="margin-top: 0;">
+  <span class="pill">{{ summary.totals.rows }} row{{ summary.totals.rows|pluralize }}</span>
+  <span class="pill" style="color: var(--lime);">{{ summary.totals.valid }} valid</span>
+  {% if summary.totals.invalid %}<span class="pill" style="color: var(--pink);">{{ summary.totals.invalid }} invalid</span>{% endif %}
+  <span class="pill">{{ summary.totals.new }} new</span>
+  <span class="pill">{{ summary.totals.updated }} updated</span>
+</div>
+{% for exam in summary.exams %}
+  <div style="margin-top: 10px;">
+    <strong>{{ exam.name|default:"(no section)" }}</strong>
+    <div class="stack" style="gap: 4px; margin-top: 4px;">
+      {% for t in exam.topics %}
+        <div class="row-between" style="font-size: 13.5px; color: var(--muted);">
+          <span>{{ t.name|default:"(no topic)" }}</span><span class="count">{{ t.questions }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endfor %}
+{% if summary.errors %}
+  <div style="margin-top: 14px;">
+    <strong class="form-error">{{ summary.errors|length }} problem row{{ summary.errors|length|pluralize }}:</strong>
+    <ul class="errorlist">
+      {% for e in summary.errors|slice:":12" %}<li>Row {{ e.row }}: {{ e.message }}</li>{% endfor %}
+      {% if summary.errors|length > 12 %}<li>… and {{ summary.errors|length|add:"-12" }} more.</li>{% endif %}
+    </ul>
+  </div>
+{% endif %}

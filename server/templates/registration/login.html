@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Sign in — DSC1 Question Bank{% endblock %}
+{% block content %}
+<div class="center-screen">
+  <form class="center-card" method="post">
+    {% csrf_token %}
+    <div class="eyebrow">DSC1 · QUESTION BANK</div>
+    <h1 class="page-title">Sign in</h1>
+    <p class="muted">Welcome back — sign in to your courses.</p>
+    <label class="field">
+      <span class="label">Email</span>
+      <input type="email" name="email" autocomplete="email" autofocus
+             value="{{ form.email.value|default:'' }}" required />
+    </label>
+    <label class="field">
+      <span class="label">Password</span>
+      <input type="password" name="password" autocomplete="current-password" required />
+    </label>
+    {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;">Sign in</button>
+    <p class="muted" style="margin-top: 16px;">
+      New here? <a class="nav-link" href="{% url 'signup' %}">Create an account</a>
+    </p>
+  </form>
+</div>
+{% endblock %}

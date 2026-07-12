@@ -26,7 +26,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_framework",
     "api",
     "courses",
 ]
@@ -54,6 +53,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "courses:list"
+LOGOUT_REDIRECT_URL = "landing"
 
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
@@ -124,20 +126,20 @@ DATABASES = {
     )
 }
 
-# Single-origin static serving of the built SPA bundle (spa_dist/).
+# Static assets: app CSS/JS plus vendored HTMX/Alpine, served by whitenoise.
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "spa_dist"] if (BASE_DIR / "spa_dist").exists() else []
+STATICFILES_DIRS = [BASE_DIR / "static"]
+# Hashed, compressed manifest storage in production (collectstatic runs in the
+# build); plain storage in dev/tests so {% static %} works without a manifest.
+_staticfiles_backend = (
+    "django.contrib.staticfiles.storage.StaticFilesStorage"
+    if DEBUG
+    else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
 STORAGES = {
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    "staticfiles": {"BACKEND": _staticfiles_backend},
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-}
-
-REST_FRAMEWORK = {
-    "EXCEPTION_HANDLER": "api.exceptions.json_exception_handler",
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
-    ],
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}DSC1 Question Bank — build your own MCQ revision tool{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="eyebrow">DSC1 · QUESTION BANK</div>
+  <h1>Build your own MCQ exam revision tool</h1>
+  <p class="sub">
+    Create a course, import your questions, and revise with multiple-choice drills,
+    flashcards, and mock exams. Register to build and manage your own courses —
+    sharing and studying stay free for everyone.
+  </p>
+  <div class="hero-ctas">
+    <a class="btn btn-primary" href="{% url 'signup' %}">Get started — it’s free</a>
+    <a class="btn btn-ghost" href="/shared/d5c10000-0000-4000-8000-000000000001/">Try the demo →</a>
+  </div>
+  <p class="hero-foot">
+    The demo is a fully playable Deer Stalking Certificate course — no account needed.
+    Sign up when you want to build your own.
+  </p>
+</section>
+<section class="features">
+  <div class="card feature">
+    <h3>Three ways to study</h3>
+    <p>Drill with instant-feedback multiple choice, flip self-graded flashcards, or sit a mock exam scored against your own pass mark.</p>
+  </div>
+  <div class="card feature">
+    <h3>Bring your own questions</h3>
+    <p>Import a CSV of questions, topics and exams to spin up a course in seconds — or upload a PDF and let AI extract the questions for you.</p>
+  </div>
+  <div class="card feature">
+    <h3>Share in a click</h3>
+    <p>Every course gets a fixed share link. Send it to classmates and they can start answering questions instantly — no account required.</p>
+  </div>
+</section>
+{% endblock %}
