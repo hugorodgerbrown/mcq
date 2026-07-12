@@ -144,13 +144,27 @@ def commit_rows(course, rows: list[dict], *, skip_invalid: bool = False) -> dict
         )
         created += was_created
         updated += not was_created
+    topics_deleted, exams_deleted = _prune_empty(course)
     return {
         "exams": len(exams_seen),
         "topics": len(topics_seen),
         "questions_created": created,
         "questions_updated": updated,
         "questions_skipped": skipped,
+        "topics_deleted": topics_deleted,
+        "exams_deleted": exams_deleted,
     }
+
+
+def _prune_empty(course) -> tuple[int, int]:
+    # Re-importing upserts questions by (course, code); when a question's
+    # Section/Category changes it moves to a new Exam/Topic, which can leave the
+    # old ones holding no questions. A Topic (or an Exam) exists only to group
+    # questions, so once empty it's dead weight cluttering the dashboard — drop
+    # it. Prune topics first, then exams left with no topics.
+    topics_deleted, _ = Topic.objects.filter(exam__course=course, questions__isnull=True).delete()
+    exams_deleted, _ = Exam.objects.filter(course=course, topics__isnull=True).delete()
+    return topics_deleted, exams_deleted
 
 
 def commit_import(course, file, *, skip_invalid: bool = False) -> dict:

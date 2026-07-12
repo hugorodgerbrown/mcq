@@ -3,7 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
 from courses import importer
-from courses.models import Course, Question
+from courses.models import Course, Exam, Question, Topic
 
 HEADER = "Section,Category,Code,Question,A,B,C,D,Correct,Explanation,Source\n"
 ROW = "Written,Law,Q1,What?,a,b,c,d,A,,\n"
@@ -42,6 +42,33 @@ class ImporterTests(TestCase):
         importer.commit_import(self.course, csv_file(changed))
         self.assertEqual(Question.objects.filter(course=self.course).count(), 3)  # Q1,Q2,Q3
         self.assertEqual(Question.objects.get(course=self.course, code="Q1").correct, "C")
+
+    def test_recategorising_prunes_emptied_topic(self):
+        # Q1 starts in Law; re-import moves it to Ethics. The now-empty Law
+        # topic should be deleted rather than linger with 0 questions.
+        importer.commit_import(self.course, csv_file(HEADER + ROW))
+        self.assertTrue(Topic.objects.filter(name="Law").exists())
+        moved = HEADER + "Written,Ethics,Q1,What?,a,b,c,d,A,,\n"
+        result = importer.commit_import(self.course, csv_file(moved))
+        self.assertFalse(Topic.objects.filter(name="Law").exists())
+        self.assertTrue(Topic.objects.filter(name="Ethics").exists())
+        self.assertEqual(result["topics_deleted"], 1)
+
+    def test_re_sectioning_prunes_emptied_exam(self):
+        # Moving the only question out of the "Written" section leaves that exam
+        # with no topics/questions — prune the exam too.
+        importer.commit_import(self.course, csv_file(HEADER + ROW))
+        moved = HEADER + "Oral,Law,Q1,What?,a,b,c,d,A,,\n"
+        result = importer.commit_import(self.course, csv_file(moved))
+        self.assertFalse(Exam.objects.filter(name="Written").exists())
+        self.assertTrue(Exam.objects.filter(name="Oral").exists())
+        self.assertEqual(result["exams_deleted"], 1)
+
+    def test_populated_topics_are_kept(self):
+        result = importer.commit_import(self.course, csv_file(HEADER + ROW + ROW2))
+        self.assertEqual(result["topics_deleted"], 0)
+        self.assertEqual(result["exams_deleted"], 0)
+        self.assertEqual(Topic.objects.filter(exam__course=self.course).count(), 1)
 
     def test_missing_header_blocks_commit(self):
         bad = "Section,Category,Code,Question,A,B,C,D\n" + "Written,Law,Q1,What?,a,b,c,d\n"
