@@ -14,9 +14,9 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from . import importer, pdf_importer
+from . import importer
 from .forms import CourseForm, ExamSettingsForm, LoginForm, SignupForm
-from .models import Course, Exam, PdfImportJob
+from .models import Course, Exam
 
 User = get_user_model()
 
@@ -140,33 +140,45 @@ def exam_settings(request: HttpRequest, pk: int, exam_pk: int) -> HttpResponse:
     )
 
 
-# ── Import (CSV + PDF) ────────────────────────────────────────────────────
+# ── Import (CSV upload or paste) ───────────────────────────────────────────
 @login_required
 def import_page(request: HttpRequest, pk: int) -> HttpResponse:
     course = _owned_course(request, pk)
     return render(request, "courses/import.html", {"course": course})
 
 
+def _import_source(request: HttpRequest):
+    # The import form offers two ways in — an uploaded file or pasted CSV text.
+    # A file wins if both are supplied. Returns the file/str, or None if empty.
+    upload = request.FILES.get("file")
+    if upload:
+        return upload
+    pasted = (request.POST.get("pasted") or "").strip()
+    return pasted or None
+
+
 @login_required
 def csv_preview(request: HttpRequest, pk: int) -> HttpResponse:
     course = _owned_course(request, pk)
-    upload = request.FILES.get("file")
-    if not upload:
-        return render(request, "courses/_csv_preview.html", {"error": "Choose a CSV file first."})
-    summary = importer.parse_preview(course, upload)
+    source = _import_source(request)
+    if source is None:
+        return render(
+            request, "courses/_csv_preview.html", {"error": "Upload a CSV or paste one first."}
+        )
+    summary = importer.parse_preview(course, source)
     return render(request, "courses/_csv_preview.html", {"course": course, "summary": summary})
 
 
 @login_required
 def csv_commit(request: HttpRequest, pk: int) -> HttpResponse:
     course = _owned_course(request, pk)
-    upload = request.FILES.get("file")
-    if not upload:
-        messages.error(request, "Choose a CSV file first.")
+    source = _import_source(request)
+    if source is None:
+        messages.error(request, "Upload a CSV or paste one first.")
         return redirect("courses:import", pk=course.pk)
     skip_invalid = request.POST.get("skip_invalid") == "on"
     try:
-        result = importer.commit_import(course, upload, skip_invalid=skip_invalid)
+        result = importer.commit_import(course, source, skip_invalid=skip_invalid)
     except importer.ImportValidationError as exc:
         messages.error(
             request,
@@ -177,62 +189,6 @@ def csv_commit(request: HttpRequest, pk: int) -> HttpResponse:
         request,
         f"Imported {result['questions_created']} new and updated "
         f"{result['questions_updated']} question(s).",
-    )
-    return redirect("courses:detail", pk=course.pk)
-
-
-def _pdf_job_context(course: Course, job: PdfImportJob) -> dict:
-    ctx: dict = {"course": course, "job": job}
-    if job.status == PdfImportJob.Status.READY:
-        summary = importer.preview_rows(course, job.rows)
-        ctx["summary"] = summary
-        ctx["review"] = job.review
-    return ctx
-
-
-@login_required
-def pdf_start(request: HttpRequest, pk: int) -> HttpResponse:
-    course = _owned_course(request, pk)
-    upload = request.FILES.get("file")
-    if not upload:
-        return render(
-            request, "courses/_pdf_job.html", {"course": course, "error": "Choose a PDF first."}
-        )
-    try:
-        job = pdf_importer.start_job(course, upload.name, upload.read())
-    except pdf_importer.PdfImportError as exc:
-        return render(request, "courses/_pdf_job.html", {"course": course, "error": str(exc)})
-    return render(request, "courses/_pdf_job.html", _pdf_job_context(course, job))
-
-
-@login_required
-def pdf_job(request: HttpRequest, pk: int, job_pk: int) -> HttpResponse:
-    course = _owned_course(request, pk)
-    job = get_object_or_404(PdfImportJob, pk=job_pk, course=course)
-    if job.status in (PdfImportJob.Status.OUTLINING, PdfImportJob.Status.EXTRACTING):
-        job = pdf_importer.advance(job)
-    return render(request, "courses/_pdf_job.html", _pdf_job_context(course, job))
-
-
-@login_required
-def pdf_commit(request: HttpRequest, pk: int, job_pk: int) -> HttpResponse:
-    course = _owned_course(request, pk)
-    job = get_object_or_404(PdfImportJob, pk=job_pk, course=course)
-    if job.status != PdfImportJob.Status.READY:
-        messages.error(request, "That import isn’t ready yet.")
-        return redirect("courses:import", pk=course.pk)
-    skip_invalid = request.POST.get("skip_invalid") == "on"
-    try:
-        result = importer.commit_rows(course, job.rows, skip_invalid=skip_invalid)
-    except importer.ImportValidationError as exc:
-        messages.error(request, f"Import blocked by {len(exc.errors)} error(s).")
-        return redirect("courses:import", pk=course.pk)
-    job.status = PdfImportJob.Status.COMMITTED
-    job.save(update_fields=["status", "updated_at"])
-    messages.success(
-        request,
-        f"Imported {result['questions_created']} new and updated "
-        f"{result['questions_updated']} question(s) from the PDF.",
     )
     return redirect("courses:detail", pk=course.pk)
 
