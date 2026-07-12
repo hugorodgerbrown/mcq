@@ -1,0 +1,36 @@
+{% comment %}
+Global top nav. Anonymous visitors get Sign in + Get started; authenticated
+users get a small account menu (Alpine dropdown). `hide_account` can be set by a
+public/shared page to force the anonymous view even mid-session.
+{% endcomment %}
+<header class="app-header">
+  <a href="/" class="brand">DSC1 <span class="thin">Question Bank</span></a>
+  <div class="header-right">
+    {% block header_right %}{% endblock %}
+    {% if user.is_authenticated and not hide_account %}
+      <div x-data="{ open: false }" style="position: relative;">
+        <button class="btn btn-ghost btn-sm" @click="open = !open" :aria-expanded="open">
+          {{ user.email|default:user.username }} ▾
+        </button>
+        <div
+          x-show="open"
+          x-cloak
+          @click.outside="open = false"
+          style="position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 180px; background: #0d1a30; border: 1px solid var(--border2); border-radius: 12px; padding: 6px; display: flex; flex-direction: column;"
+        >
+          <a class="nav-link" href="{% url 'courses:list' %}">My courses</a>
+          {% if user.is_staff %}<a class="nav-link" href="/admin/">Admin</a>{% endif %}
+          <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="nav-link" style="background: none; border: 0; width: 100%; text-align: left; cursor: pointer;">Log out</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <a class="nav-link" href="{% url 'login' %}">Sign in</a>
+      <a class="btn btn-primary btn-sm" href="{% url 'signup' %}">Get started</a>
+    {% endif %}
+  </div>
+</header>
+{% block after_header %}{% endblock %}
+<style>[x-cloak] { display: none !important; }</style>

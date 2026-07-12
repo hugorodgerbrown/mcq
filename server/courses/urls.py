@@ -1,28 +1,18 @@
 from django.urls import path
 
-from . import api_views
+from . import views
 
 app_name = "courses"
 urlpatterns = [
-    path("", api_views.course_list, name="list"),
-    path("shared/<uuid:token>/", api_views.shared_course_content, name="shared"),
-    path("<int:pk>/content/", api_views.course_content, name="content"),
-    path("<int:pk>/import/preview/", api_views.import_preview, name="import-preview"),
-    path("<int:pk>/import/commit/", api_views.import_commit, name="import-commit"),
-    path("<int:pk>/import/pdf/", api_views.pdf_import_start, name="pdf-import-start"),
-    path(
-        "<int:pk>/import/pdf/<int:job_pk>/",
-        api_views.pdf_import_job,
-        name="pdf-import-job",
-    ),
-    path(
-        "<int:pk>/import/pdf/<int:job_pk>/commit/",
-        api_views.pdf_import_commit,
-        name="pdf-import-commit",
-    ),
-    path(
-        "<int:course_pk>/exams/<int:exam_pk>/",
-        api_views.exam_update,
-        name="exam-update",
-    ),
+    path("", views.course_list, name="list"),
+    path("new/", views.course_create, name="create"),
+    path("<int:pk>/", views.course_detail, name="detail"),
+    path("<int:pk>/study/", views.study, name="study"),
+    path("<int:pk>/settings/<int:exam_pk>/", views.exam_settings, name="exam-settings"),
+    path("<int:pk>/import/", views.import_page, name="import"),
+    path("<int:pk>/import/csv/preview/", views.csv_preview, name="csv-preview"),
+    path("<int:pk>/import/csv/commit/", views.csv_commit, name="csv-commit"),
+    path("<int:pk>/import/pdf/start/", views.pdf_start, name="pdf-start"),
+    path("<int:pk>/import/pdf/<int:job_pk>/", views.pdf_job, name="pdf-job"),
+    path("<int:pk>/import/pdf/<int:job_pk>/commit/", views.pdf_commit, name="pdf-commit"),
 ]

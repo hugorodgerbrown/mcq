@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Exam settings — {{ course.name }}{% endblock %}
+{% block content %}
+<div class="center-screen">
+  <form class="center-card" method="post" style="text-align: left;">
+    {% csrf_token %}
+    <div class="eyebrow">{{ course.name }}</div>
+    <h1 class="page-title">{{ exam.name }} settings</h1>
+    <label class="field">
+      <span class="label">Mock exam size (number of questions)</span>
+      {{ form.exam_size }}
+      {% for e in form.exam_size.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </label>
+    <label class="field">
+      <span class="label">Pass mark (%)</span>
+      {{ form.pass_mark }}
+      {% for e in form.pass_mark.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </label>
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;">Save</button>
+    <a class="btn btn-ghost btn-block" href="{% url 'courses:detail' course.pk %}" style="margin-top: 10px;">Cancel</a>
+  </form>
+</div>
+{% endblock %}

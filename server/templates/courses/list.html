@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}My courses — DSC1 Question Bank{% endblock %}
+{% block content %}
+<div class="row-between" style="margin: 20px 0;">
+  <div>
+    <div class="eyebrow">DSC1 · QUESTION BANK</div>
+    <h1 class="page-title">My courses</h1>
+  </div>
+  <a class="btn btn-primary" href="{% url 'courses:create' %}">New course</a>
+</div>
+
+{% if courses %}
+  <div class="stack">
+    {% for course in courses %}
+      <a class="list-row" href="{% url 'courses:detail' course.pk %}">
+        <span>{{ course.name }}</span>
+        <span class="count">{{ course.questions.count }} question{{ course.questions.count|pluralize }}</span>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align: center;">
+    <h1 class="page-title">No courses yet</h1>
+    <p class="muted">Create your first course, then import questions from a CSV or PDF.</p>
+    <a class="btn btn-primary" href="{% url 'courses:create' %}" style="margin-top: 12px;">Create your first course</a>
+  </div>
+{% endif %}
+{% endblock %}

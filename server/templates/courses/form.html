@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}New course — DSC1 Question Bank{% endblock %}
+{% block content %}
+<div class="center-screen">
+  <form class="center-card" method="post" style="text-align: left;">
+    {% csrf_token %}
+    <div class="eyebrow">DSC1 · QUESTION BANK</div>
+    <h1 class="page-title">New course</h1>
+    <label class="field">
+      <span class="label">Course name</span>
+      {{ form.name }}
+      {% for e in form.name.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </label>
+    <label class="field">
+      <span class="label">Rubric (optional)</span>
+      {{ form.rubric }}
+      {% for e in form.rubric.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </label>
+    <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;">Create</button>
+    <a class="btn btn-ghost btn-block" href="{% url 'courses:list' %}" style="margin-top: 10px;">Cancel</a>
+  </form>
+</div>
+{% endblock %}

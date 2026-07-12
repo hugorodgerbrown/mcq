@@ -1,0 +1,49 @@
+{% if error %}
+  <div class="card"><p class="form-error">{{ error }}</p></div>
+{% elif job.status == 'outlining' or job.status == 'extracting' %}
+  <div class="card"
+       hx-get="{% url 'courses:pdf-job' course.pk job.pk %}"
+       hx-trigger="every 3s"
+       hx-target="this"
+       hx-swap="outerHTML">
+    <div class="toolbar" style="margin: 0;">
+      <span class="spinner"></span>
+      <strong>{{ job.get_status_display }}…</strong>
+    </div>
+    <p class="muted2" style="margin: 8px 0 0;">
+      Reading the PDF and extracting questions with AI. This can take a few minutes —
+      keep this page open.
+    </p>
+  </div>
+{% elif job.status == 'ready' %}
+  <div class="card">
+    <strong>Extraction complete — review before importing</strong>
+    {% include "courses/_summary.html" with summary=summary %}
+    {% if review %}
+      <div style="margin-top: 16px;">
+        <span class="badge-inferred">⚠ {{ review|length }} answer{{ review|length|pluralize }} were inferred — please check</span>
+        {% for item in review %}
+          <div class="review-item">
+            <div style="font-size: 14px;">{{ item.text|default:item.question }}</div>
+            <div class="muted2" style="font-size: 13px; margin-top: 4px;">
+              Suggested answer: <strong>{{ item.correct }}</strong>
+              {% if item.confidence %} · confidence {{ item.confidence }}{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <form method="post" action="{% url 'courses:pdf-commit' course.pk job.pk %}" style="margin-top: 16px;">
+      {% csrf_token %}
+      {% if summary.totals.invalid %}
+        <label style="display: flex; gap: 8px; align-items: center; font-size: 14px; margin-bottom: 12px;">
+          <input type="checkbox" name="skip_invalid" style="width: auto;" />
+          Skip the {{ summary.totals.invalid }} invalid row(s)
+        </label>
+      {% endif %}
+      <button type="submit" class="btn btn-primary">Import these questions</button>
+    </form>
+  </div>
+{% elif job.status == 'error' %}
+  <div class="card"><p class="form-error">{{ job.error|default:"The import failed." }}</p></div>
+{% endif %}

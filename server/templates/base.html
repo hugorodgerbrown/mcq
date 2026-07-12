@@ -1,0 +1,25 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}DSC1 Question Bank{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}" />
+    <script defer src="{% static 'vendor/alpine.min.js' %}"></script>
+    <script src="{% static 'vendor/htmx.min.js' %}"></script>
+  </head>
+  <body>
+    {% block header %}{% include "_header.html" %}{% endblock %}
+    <main class="wrap {% block wrap_class %}{% endblock %}">
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

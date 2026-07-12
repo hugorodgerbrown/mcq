@@ -1,0 +1,9 @@
+{% if error %}
+  <p class="form-error">{{ error }}</p>
+{% elif summary %}
+  {% include "courses/_summary.html" with summary=summary %}
+  <p class="form-hint" style="margin-top: 12px;">
+    Ready to import? Rows are matched by <code>Code</code> — existing questions are updated, new ones added.
+    {% if summary.totals.invalid %} Tick “skip invalid rows” to import only the {{ summary.totals.valid }} valid row(s).{% endif %}
+  </p>
+{% endif %}
