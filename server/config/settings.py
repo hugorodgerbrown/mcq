@@ -20,14 +20,12 @@ if _render_host:
     ALLOWED_HOSTS.append(_render_host)
 
 INSTALLED_APPS = [
+    "django.contrib.admin",
     "django.contrib.contenttypes",
     "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.sites",
     "django.contrib.staticfiles",
-    "allauth",
-    "allauth.account",
     "rest_framework",
     "api",
     "courses",
@@ -41,30 +39,21 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
 ]
 
 # Clickjacking protection (was an X-Frame-Options header on the old static site;
 # Render only allows response headers on static services, so it lives here now).
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
-SITE_ID = 1
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
+# Auth is email + password on the default User model (username is set to the
+# email at signup). The SPA drives it through JSON endpoints under /api/v1/auth/;
+# there are no server-rendered login pages. Just the stock ModelBackend is needed.
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
-
-# django-allauth account configuration (email-as-identifier, no username).
-ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-# "mandatory" (verify before first login), "optional", or "none" (skip). Set
-# ACCOUNT_EMAIL_VERIFICATION=none to bypass verification in a test environment.
-ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
-ACCOUNT_UNIQUE_EMAIL = True
-LOGIN_REDIRECT_URL = "/"
-ACCOUNT_LOGOUT_REDIRECT_URL = "/"
-
 
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))

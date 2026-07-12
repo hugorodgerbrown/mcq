@@ -16,6 +16,24 @@ export async function getMe() {
   const res = await req("/api/v1/me/");
   return res.ok ? res.json() : null;
 }
+async function postJson(path, body) {
+  const res = await req(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = res.status === 204 ? {} : await res.json().catch(() => ({}));
+  return { ok: res.ok, data };
+}
+export async function signup(email, password) {
+  return postJson("/api/v1/auth/signup/", { email, password });
+}
+export async function login(email, password) {
+  return postJson("/api/v1/auth/login/", { email, password });
+}
+export async function logout() {
+  return postJson("/api/v1/auth/logout/", {});
+}
 export async function listCourses() {
   const res = await req("/api/v1/courses/");
   return res.ok ? res.json() : [];

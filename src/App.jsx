@@ -10,6 +10,9 @@ import {
   importCommit,
   importPreview,
   listCourses,
+  login,
+  logout,
+  signup,
   startPdfImport,
   updateExam,
 } from "./api.js";
@@ -305,7 +308,6 @@ function StudyApp({
             items={[
               { label: "My courses", onClick: onChangeCourse },
               { label: "Exam settings", onClick: onSettings },
-              { label: "Account", href: "/accounts/email/" },
             ]}
           />
           <header style={styles.homeHeader}>
@@ -1569,12 +1571,13 @@ function ShareButton({ url }) {
 // any outside click.
 function AccountMenu({ email, items }) {
   const [open, setOpen] = useState(false);
+  const signOut = useCallback(async () => {
+    await logout();
+    window.location.assign("/");
+  }, []);
   const links = [
-    ...(items || [
-      { label: "My courses", href: "/" },
-      { label: "Account", href: "/accounts/email/" },
-    ]),
-    { label: "Log out", href: "/accounts/logout/" },
+    ...(items || [{ label: "My courses", href: "/" }]),
+    { label: "Log out", onClick: signOut },
   ];
   const initial = (email || "?").trim().charAt(0).toUpperCase() || "?";
 
@@ -1636,10 +1639,10 @@ function Header({ auth, items, right = null }) {
           <AccountMenu email={auth.email} items={items} />
         ) : (
           <>
-            <a style={styles.navLink} href="/accounts/login/">
+            <a style={styles.navLink} href="/login">
               Sign in
             </a>
-            <a style={styles.navCta} href="/accounts/signup/">
+            <a style={styles.navCta} href="/signup">
               Get started
             </a>
           </>
@@ -1681,7 +1684,7 @@ function Landing() {
             own courses — sharing and studying stay free for everyone.
           </p>
           <div style={styles.heroCtas}>
-            <a style={styles.ctaPrimary} href="/accounts/signup/">
+            <a style={styles.ctaPrimary} href="/signup">
               Get started — it&apos;s free
             </a>
             <a style={styles.ctaSecondary} href={shareUrlFor(DEMO_SHARE_TOKEN)}>
@@ -1702,6 +1705,102 @@ function Landing() {
           ))}
         </section>
       </main>
+    </div>
+  );
+}
+
+// SPA-native email + password auth. `mode` is "login" or "signup". Replaces the
+// old server-rendered allauth pages. On success we do a full navigation to "/"
+// so the whole app re-bootstraps with the new session cookie.
+function AuthScreen({ mode }) {
+  const isSignup = mode === "signup";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const emailField = useFocusStyle(styles.input);
+  const pwField = useFocusStyle(styles.input);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const addr = email.trim();
+    if (!addr || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    const { ok, data } = await (isSignup ? signup : login)(addr, password);
+    if (ok) {
+      window.location.assign("/");
+      return;
+    }
+    setBusy(false);
+    setError(data.detail || "Something went wrong. Please try again.");
+  };
+
+  return (
+    <div style={styles.landingRoot}>
+      <Header auth={null} />
+      <div style={styles.shellCenter}>
+        <form style={{ ...styles.shellCard, textAlign: "left" }} onSubmit={submit}>
+          <div style={styles.eyebrow}>DSC1 · QUESTION BANK</div>
+          <h1 style={styles.shellHeading}>{isSignup ? "Create your account" : "Sign in"}</h1>
+          <p style={styles.shellText}>
+            {isSignup
+              ? "Register to build and manage your own courses."
+              : "Welcome back — sign in to your courses."}
+          </p>
+          <label style={styles.fieldWrap}>
+            <span style={styles.fieldLabel}>Email</span>
+            <input
+              {...emailField}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              autoFocus
+            />
+          </label>
+          <label style={styles.fieldWrap}>
+            <span style={styles.fieldLabel}>Password</span>
+            <input
+              {...pwField}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={isSignup ? "At least 8 characters" : "Your password"}
+              autoComplete={isSignup ? "new-password" : "current-password"}
+            />
+          </label>
+          {error && <p style={styles.formError}>{error}</p>}
+          <button
+            type="submit"
+            style={{ ...styles.shellCta, width: "100%", opacity: busy ? 0.6 : 1 }}
+            disabled={busy}
+          >
+            {busy ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
+          </button>
+          <p style={{ ...styles.shellText, marginTop: 16, textAlign: "center" }}>
+            {isSignup ? (
+              <>
+                Already have an account?{" "}
+                <a style={styles.navLink} href="/login">
+                  Sign in
+                </a>
+              </>
+            ) : (
+              <>
+                New here?{" "}
+                <a style={styles.navLink} href="/signup">
+                  Create an account
+                </a>
+              </>
+            )}
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
@@ -2348,8 +2447,11 @@ function SharedCourse({ token }) {
 // else is the owner's authenticated app. Kept hook-free so the two branches
 // never share hook state.
 export default function App() {
-  const match = window.location.pathname.match(/^\/shared\/([0-9a-fA-F-]+)\/?$/);
-  if (match) return <SharedCourse token={match[1]} />;
+  const path = window.location.pathname;
+  const shared = path.match(/^\/shared\/([0-9a-fA-F-]+)\/?$/);
+  if (shared) return <SharedCourse token={shared[1]} />;
+  if (path === "/login" || path === "/login/") return <AuthScreen mode="login" />;
+  if (path === "/signup" || path === "/signup/") return <AuthScreen mode="signup" />;
   return <OwnerApp />;
 }
 

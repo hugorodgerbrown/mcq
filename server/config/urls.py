@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import include, path, re_path
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -13,9 +14,9 @@ def spa_index(request: object) -> HttpResponse:
 
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
     path("api/v1/", include("api.urls")),
     path("api/v1/courses/", include("courses.urls")),
-    path("accounts/", include("allauth.urls")),
     path("", spa_index),
-    re_path(r"^(?!api/|accounts/|static/).*$", spa_index),
+    re_path(r"^(?!api/|admin/|static/).*$", spa_index),
 ]
