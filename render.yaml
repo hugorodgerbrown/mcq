@@ -13,7 +13,7 @@ services:
     runtime: python
     rootDir: server # Python version comes from server/.python-version (3.12)
     plan: free # free web services sleep after inactivity — bump for production
-    buildCommand: "cd .. && npm install && npm run build && cd server && pip install -e . && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py loaddata dsc1_demo"
+    buildCommand: "cd .. && npm install && npm run build && cd server && pip install -e . && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py loaddata dsc1_demo && python manage.py ensure_superuser"
     startCommand: "gunicorn config.wsgi:application"
     envVars:
       - key: DEBUG
@@ -28,8 +28,19 @@ services:
         fromDatabase:
           name: mcq-db
           property: connectionString
-      # Email (django-allauth verification / password reset). Provide these to send
-      # real mail; until then production has no SMTP host and sends nothing.
+      # Admin superuser for the Django admin at /admin/ (data management).
+      # Set both and each deploy will create-or-update this account. Leave unset
+      # to skip; you can always create one manually with `createsuperuser`.
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+      # Email is optional and NOT required to sign in — login/signup are email
+      # + password with no verification step. These vars are only used if a
+      # future feature (e.g. password reset) sends mail. Render blocks outbound
+      # SMTP, so for Resend set EMAIL_HOST=smtp.resend.com and
+      # EMAIL_HOST_PASSWORD=<re_… key> (or RESEND_API_KEY) to send over Resend's
+      # HTTPS API; the DEFAULT_FROM_EMAIL domain must be verified in Resend.
       - key: EMAIL_HOST
         sync: false
       - key: EMAIL_PORT
@@ -42,11 +53,7 @@ services:
         sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
-      # Account email verification: "mandatory" (default), "optional", or
-      # "none". Set to "none" to let accounts sign in without verifying (handy
-      # for a test environment before SMTP is wired up). Without an EMAIL_HOST,
-      # verification emails print to the logs instead of failing.
-      - key: ACCOUNT_EMAIL_VERIFICATION
+      - key: RESEND_API_KEY
         sync: false
       # Anthropic API key for the PDF-to-questions importer. Without it, PDF
       # import is disabled (CSV import and everything else still work).

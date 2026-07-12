@@ -20,14 +20,12 @@ if _render_host:
     ALLOWED_HOSTS.append(_render_host)
 
 INSTALLED_APPS = [
+    "django.contrib.admin",
     "django.contrib.contenttypes",
     "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.sites",
     "django.contrib.staticfiles",
-    "allauth",
-    "allauth.account",
     "rest_framework",
     "api",
     "courses",
@@ -41,50 +39,57 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
 ]
 
 # Clickjacking protection (was an X-Frame-Options header on the old static site;
 # Render only allows response headers on static services, so it lives here now).
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
-SITE_ID = 1
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
+# Auth is email + password on the default User model (username is set to the
+# email at signup). The SPA drives it through JSON endpoints under /api/v1/auth/;
+# there are no server-rendered login pages. Just the stock ModelBackend is needed.
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# django-allauth account configuration (email-as-identifier, no username).
-ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-# "mandatory" (verify before first login), "optional", or "none" (skip). Set
-# ACCOUNT_EMAIL_VERIFICATION=none to bypass verification in a test environment.
-ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
-ACCOUNT_UNIQUE_EMAIL = True
-LOGIN_REDIRECT_URL = "/"
-ACCOUNT_LOGOUT_REDIRECT_URL = "/"
-
-
-def _resolve_email_backend(debug: bool, env: Mapping[str, str]) -> str:
-    # An explicit EMAIL_BACKEND always wins. Otherwise use SMTP only when an
-    # EMAIL_HOST is actually configured — without one, the SMTP backend blocks
-    # on a dead socket and crashes signup/login, so fall back to console (the
-    # verification link is printed to the logs) instead of 500ing.
-    if "EMAIL_BACKEND" in env:
-        return env["EMAIL_BACKEND"]
-    if debug or not env.get("EMAIL_HOST"):
-        return "django.core.mail.backends.console.EmailBackend"
-    return "django.core.mail.backends.smtp.EmailBackend"
-
-
-EMAIL_BACKEND = _resolve_email_backend(DEBUG, os.environ)
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") == "1"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@dsc1.local")
+
+# Resend is sent over its HTTPS API rather than SMTP, because Render blocks
+# outbound SMTP ports (the SMTP backend hangs until the worker times out).
+# Detected from an explicit RESEND_API_KEY, or from the SMTP vars when they
+# point at Resend (EMAIL_HOST=smtp.resend.com, EMAIL_HOST_PASSWORD=the re_… key).
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "") or (
+    EMAIL_HOST_PASSWORD if "resend" in EMAIL_HOST.lower() else ""
+)
+
+
+def _resolve_email_backend(
+    debug: bool, env: Mapping[str, str], *, resend_key: str, email_host: str
+) -> str:
+    # An explicit EMAIL_BACKEND always wins. Resend goes over its HTTPS API.
+    # Otherwise use SMTP only when an EMAIL_HOST is configured — without one the
+    # SMTP backend blocks on a dead socket and crashes signup/login, so fall
+    # back to console (verification link printed to the logs) instead of 500ing.
+    if "EMAIL_BACKEND" in env:
+        return env["EMAIL_BACKEND"]
+    if resend_key:
+        return "config.email_backends.ResendEmailBackend"
+    if debug or not email_host:
+        return "django.core.mail.backends.console.EmailBackend"
+    return "django.core.mail.backends.smtp.EmailBackend"
+
+
+EMAIL_BACKEND = _resolve_email_backend(
+    DEBUG, os.environ, resend_key=RESEND_API_KEY, email_host=EMAIL_HOST
+)
 
 # Anthropic API key for the PDF-to-questions importer. Unset in dev/CI (the
 # importer only calls out when a PDF is actually submitted, and tests mock the
