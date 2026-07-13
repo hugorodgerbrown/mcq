@@ -1,12 +1,8 @@
-import json
-from types import SimpleNamespace
-from unittest.mock import patch
-
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.test import TestCase
 
-from courses.models import Course, Exam, PdfImportJob, Question, Topic
+from courses.models import Course, Exam, Question, Topic
 
 User = get_user_model()
 
@@ -83,6 +79,13 @@ class CsvImportViewTests(TestCase):
     def _csv(self):
         return SimpleUploadedFile("q.csv", CSV.encode(), content_type="text/csv")
 
+    def test_import_page_offers_prompt_and_paste(self):
+        resp = self.client.get(f"/courses/{self.course.pk}/import/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Copy prompt")
+        self.assertContains(resp, 'name="pasted"')
+        self.assertContains(resp, "claude.ai/new")
+
     def test_preview_returns_summary_partial(self):
         resp = self.client.post(
             f"/courses/{self.course.pk}/import/csv/preview/", {"file": self._csv()}
@@ -96,6 +99,20 @@ class CsvImportViewTests(TestCase):
         )
         self.assertRedirects(resp, f"/courses/{self.course.pk}/")
         self.assertEqual(Question.objects.filter(course=self.course).count(), 2)
+
+    def test_preview_accepts_pasted_text(self):
+        resp = self.client.post(f"/courses/{self.course.pk}/import/csv/preview/", {"pasted": CSV})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "2 valid")
+
+    def test_commit_accepts_pasted_text(self):
+        resp = self.client.post(f"/courses/{self.course.pk}/import/csv/commit/", {"pasted": CSV})
+        self.assertRedirects(resp, f"/courses/{self.course.pk}/")
+        self.assertEqual(Question.objects.filter(course=self.course).count(), 2)
+
+    def test_empty_submission_is_reported(self):
+        resp = self.client.post(f"/courses/{self.course.pk}/import/csv/preview/", {})
+        self.assertContains(resp, "Upload a CSV or paste one first.")
 
 
 class StudyViewTests(TestCase):
@@ -125,104 +142,3 @@ class StudyViewTests(TestCase):
     def test_shared_study_unknown_token_404(self):
         resp = self.client.get("/shared/d5c10000-0000-4000-8000-000000000099/")
         self.assertEqual(resp.status_code, 404)
-
-
-# ── PDF import (Claude Batch mocked) ──────────────────────────────────────
-OUTLINE = {
-    "exam_name": "DSC1",
-    "topics": [{"name": "Law", "summary": "Law", "start_page": 1, "end_page": 3}],
-}
-EXTRACTION = {
-    "t0": {
-        "questions": [
-            {
-                "code": "Q1",
-                "text": "A law question?",
-                "option_a": "a",
-                "option_b": "b",
-                "option_c": "c",
-                "option_d": "d",
-                "correct": "A",
-                "answer_source": "stated",
-                "confidence": "high",
-                "explanation": "Because.",
-                "page": 1,
-            }
-        ]
-    }
-}
-
-
-def _entry(custom_id, obj):
-    msg = SimpleNamespace(content=[SimpleNamespace(type="text", text=json.dumps(obj))])
-    return SimpleNamespace(
-        custom_id=custom_id, result=SimpleNamespace(type="succeeded", message=msg)
-    )
-
-
-class _FakeBatches:
-    def __init__(self):
-        self._n = 0
-        self._results = {}
-
-    def create(self, requests):
-        self._n += 1
-        if self._n == 1:
-            bid = "batch_outline"
-            self._results[bid] = [_entry("outline", OUTLINE)]
-        else:
-            bid = "batch_extract"
-            self._results[bid] = [
-                _entry(r["custom_id"], EXTRACTION.get(r["custom_id"], {"questions": []}))
-                for r in requests
-            ]
-        return SimpleNamespace(id=bid)
-
-    def retrieve(self, batch_id):
-        return SimpleNamespace(processing_status="ended")
-
-    def results(self, batch_id):
-        return list(self._results.get(batch_id, []))
-
-
-def _fake_client():
-    return SimpleNamespace(messages=SimpleNamespace(batches=_FakeBatches()))
-
-
-class PdfImportViewTests(TestCase):
-    def setUp(self):
-        self.owner = User.objects.create_user("o@x.com", email="o@x.com", password="pw12345678")
-        self.course = Course.objects.create(owner=self.owner, name="DSC1")
-
-    def _pdf(self):
-        return SimpleUploadedFile("exam.pdf", b"%PDF-1.4 fake", content_type="application/pdf")
-
-    @override_settings(ANTHROPIC_API_KEY="test-key")
-    def test_full_flow_through_partials(self):
-        with patch("courses.pdf_importer._client", return_value=_fake_client()):
-            self.client.force_login(self.owner)
-            start = self.client.post(
-                f"/courses/{self.course.pk}/import/pdf/start/", {"file": self._pdf()}
-            )
-            self.assertEqual(start.status_code, 200)
-            self.assertContains(start, "Outlining")  # polling partial
-            job = PdfImportJob.objects.get(course=self.course)
-            url = f"/courses/{self.course.pk}/import/pdf/{job.pk}/"
-            # poll 1 → extracting
-            self.assertContains(self.client.get(url), "Extracting")
-            # poll 2 → ready with a commit button
-            ready = self.client.get(url)
-            self.assertContains(ready, "Import these questions")
-            # commit writes the question
-            commit = self.client.post(f"{url}commit/")
-            self.assertRedirects(commit, f"/courses/{self.course.pk}/")
-            self.assertEqual(Question.objects.filter(course=self.course).count(), 1)
-
-    @override_settings(ANTHROPIC_API_KEY="")
-    def test_unconfigured_shows_error_partial(self):
-        self.client.force_login(self.owner)
-        resp = self.client.post(
-            f"/courses/{self.course.pk}/import/pdf/start/", {"file": self._pdf()}
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "not configured")

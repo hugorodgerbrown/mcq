@@ -75,3 +75,38 @@ class ImporterTests(TestCase):
         with self.assertRaises(importer.ImportValidationError):
             importer.commit_import(self.course, csv_file(bad))
         self.assertEqual(Question.objects.count(), 0)
+
+    # ── Hardened parsing: the CSV Claude produces rarely matches the contract
+    #    exactly, so tolerate the common deviations instead of rejecting the file.
+    def test_header_aliases_are_accepted(self):
+        # "Topic"→Category, "Answer"→Correct, "Option A"→A, "Q"→Question, etc.
+        aliased = (
+            "Exam,Topic,ID,Q,Option A,Option B,Option C,Option D,Answer\n"
+            "Written,Law,Q1,What?,a,b,c,d,A\n"
+        )
+        result = importer.commit_import(self.course, csv_file(aliased))
+        self.assertEqual(result["questions_created"], 1)
+        q = Question.objects.get(course=self.course, code="Q1")
+        self.assertEqual((q.topic.name, q.topic.exam.name, q.correct), ("Law", "Written", "A"))
+
+    def test_pasted_string_and_code_fence(self):
+        # commit_import accepts a raw string (paste path), Markdown fence and all.
+        fenced = "```csv\n" + HEADER + ROW + "```"
+        result = importer.commit_import(self.course, fenced)
+        self.assertEqual(result["questions_created"], 1)
+
+    def test_correct_answer_variants_normalise(self):
+        rows = (
+            HEADER
+            + "Written,Law,Q1,What?,alpha,beta,gamma,delta,B)\n"  # "B)" → B
+            + "Written,Law,Q2,What?,alpha,beta,gamma,delta,Option C\n"  # "Option C" → C
+            + "Written,Law,Q3,What?,alpha,beta,gamma,delta,delta\n"  # option text → D
+        )
+        importer.commit_import(self.course, csv_file(rows))
+        got = {q.code: q.correct for q in Question.objects.filter(course=self.course)}
+        self.assertEqual(got, {"Q1": "B", "Q2": "C", "Q3": "D"})
+
+    def test_blank_rows_are_ignored(self):
+        padded = HEADER + ROW + ",,,,,,,,,,\n" + "\n" + ROW2
+        result = importer.commit_import(self.course, csv_file(padded))
+        self.assertEqual(result["questions_created"], 2)

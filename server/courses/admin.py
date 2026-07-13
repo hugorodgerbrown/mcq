@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Course, Exam, PdfImportJob, Question, Topic
+from .models import Course, Exam, Question, Topic
 
 
 class ExamInline(admin.TabularInline):
@@ -41,12 +41,3 @@ class QuestionAdmin(admin.ModelAdmin):
     list_display = ("code", "text", "correct", "topic", "course")
     list_filter = ("course", "topic", "correct")
     search_fields = ("code", "text")
-
-
-@admin.register(PdfImportJob)
-class PdfImportJobAdmin(admin.ModelAdmin):
-    list_display = ("id", "status", "filename", "course", "created_at")
-    list_filter = ("status",)
-    readonly_fields = ("created_at", "updated_at")
-    # These hold large blobs / batch state — keep them out of the edit form.
-    exclude = ("pdf_b64",)

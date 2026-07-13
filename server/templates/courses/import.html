@@ -9,53 +9,103 @@
   <a class="btn btn-ghost" href="{% url 'courses:detail' course.pk %}">Back</a>
 </div>
 
-<div x-data="{ tab: 'csv' }">
-  <div class="seg" style="margin-bottom: 16px;">
-    <button :class="tab === 'csv' && 'active'" @click="tab = 'csv'">CSV file</button>
-    <button :class="tab === 'pdf' && 'active'" @click="tab = 'pdf'">PDF (AI extract)</button>
+<!-- Step 1 · Get a CSV out of your PDF using Claude -->
+<div class="card" style="margin-bottom: 16px;" x-data="{ copied: false }">
+  <div class="row-between">
+    <div>
+      <strong>1 · Turn your PDF into a CSV</strong>
+      <p class="muted2" style="margin: 4px 0 0; font-size: 13px;">
+        Open Claude, attach your exam PDF, and paste the prompt below. Claude returns a CSV
+        that imports cleanly here.
+      </p>
+    </div>
+    <a class="btn btn-sm" href="https://claude.ai/new" target="_blank" rel="noopener">Open Claude ↗</a>
   </div>
 
-  <!-- CSV -->
-  <div x-show="tab === 'csv'" class="card">
-    <p class="muted" style="margin-top: 0;">
-      Upload a CSV with columns: <code>Section, Category, Code, Question, A, B, C, D, Correct</code>
-      (optional <code>Explanation, Source</code>). Preview first, then import.
-    </p>
-    <form enctype="multipart/form-data" method="post" action="{% url 'courses:csv-commit' course.pk %}">
-      {% csrf_token %}
-      <input type="file" name="file" accept=".csv,text/csv" required />
-      <div class="toolbar">
-        <button type="button" class="btn"
-                hx-post="{% url 'courses:csv-preview' course.pk %}"
-                hx-target="#csv-result" hx-swap="innerHTML"
-                hx-encoding="multipart/form-data">Preview</button>
-        <label style="display: flex; gap: 8px; align-items: center; font-size: 14px;">
-          <input type="checkbox" name="skip_invalid" style="width: auto;" /> Skip invalid rows
-        </label>
-        <button type="submit" class="btn btn-primary">Import</button>
-      </div>
-      <div id="csv-result"></div>
-    </form>
-  </div>
+  <pre id="claude-prompt" class="prompt-box">I've attached an exam PDF. Extract every multiple-choice question into a CSV I can import into my study app.
 
-  <!-- PDF -->
-  <div x-show="tab === 'pdf'" x-cloak class="card">
-    <p class="muted" style="margin-top: 0;">
-      Upload a PDF and AI reads it, splits it into topics, and extracts questions and answers.
-      Inferred answers are flagged for you to check before importing.
-    </p>
-    <form enctype="multipart/form-data">
-      {% csrf_token %}
-      <input type="file" name="file" accept="application/pdf,.pdf" required />
-      <div class="toolbar">
-        <button type="button" class="btn btn-primary"
-                hx-post="{% url 'courses:pdf-start' course.pk %}"
-                hx-target="#pdf-result" hx-swap="innerHTML"
-                hx-encoding="multipart/form-data"
-                hx-disabled-elt="this">Extract questions</button>
-      </div>
-    </form>
-    <div id="pdf-result"></div>
+Output the CSV as a downloadable .csv file. If you can't attach a file, output a single ```csv code block and nothing else.
+
+Use exactly this header row, in this order:
+Section,Category,Code,Question,A,B,C,D,Correct,Explanation,Source
+
+Rules:
+- One row per question.
+- Section = the exam or paper name. Category = the topic the question belongs to.
+- Code = a short unique id for each question (e.g. Q1, Q2, …). Never reuse a code.
+- Question = the full question text. A, B, C, D = the four answer options (exactly four).
+- Correct = the single letter A, B, C, or D of the right answer.
+- Explanation = a short reason for the answer (optional). Source = page number or reference (optional).
+- If a field contains a comma, wrap that whole field in double quotes.
+- Only include questions actually in the PDF — never invent a question or an option.
+- If the PDF doesn't state the correct answer, use your best judgement and note "answer inferred" in Explanation.</pre>
+
+  <div class="toolbar">
+    <button type="button" class="btn btn-sm"
+            @click="navigator.clipboard.writeText(document.getElementById('claude-prompt').innerText); copied = true; setTimeout(() => copied = false, 1500)">
+      <span x-text="copied ? 'Copied!' : 'Copy prompt'">Copy prompt</span>
+    </button>
+    <span class="muted2" style="font-size: 13px;">Then bring the CSV back here ↓</span>
   </div>
 </div>
+
+<!-- Step 2 · Import the CSV (upload a file or paste the text) -->
+<div class="card" x-data="{ mode: 'upload' }">
+  <strong>2 · Import the CSV</strong>
+  <p class="muted2" style="margin: 4px 0 12px; font-size: 13px;">
+    Columns: <code>Section, Category, Code, Question, A, B, C, D, Correct</code>
+    (optional <code>Explanation, Source</code>). Preview first to check it before importing.
+  </p>
+
+  <div class="seg" style="margin-bottom: 12px;">
+    <button type="button" :class="mode === 'upload' && 'active'" @click="mode = 'upload'">Upload file</button>
+    <button type="button" :class="mode === 'paste' && 'active'" @click="mode = 'paste'">Paste text</button>
+  </div>
+
+  <form enctype="multipart/form-data" method="post" action="{% url 'courses:csv-commit' course.pk %}">
+    {% csrf_token %}
+    <div x-show="mode === 'upload'">
+      <input type="file" name="file" accept=".csv,text/csv" />
+    </div>
+    <div x-show="mode === 'paste'" x-cloak>
+      <textarea name="pasted" rows="8" class="paste-box"
+                placeholder="Paste the CSV Claude gave you (with or without the ```csv fence)…"></textarea>
+    </div>
+
+    <div class="toolbar">
+      <button type="button" class="btn"
+              hx-post="{% url 'courses:csv-preview' course.pk %}"
+              hx-target="#csv-result" hx-swap="innerHTML"
+              hx-encoding="multipart/form-data">Preview</button>
+      <label style="display: flex; gap: 8px; align-items: center; font-size: 14px;">
+        <input type="checkbox" name="skip_invalid" style="width: auto;" /> Skip invalid rows
+      </label>
+      <button type="submit" class="btn btn-primary">Import</button>
+    </div>
+    <div id="csv-result"></div>
+  </form>
+</div>
+
+<style>
+  .prompt-box {
+    margin: 14px 0 0;
+    padding: 14px 16px;
+    background: var(--surface-2, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .paste-box {
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+  }
+</style>
 {% endblock %}

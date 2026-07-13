@@ -50,7 +50,7 @@
   {% endfor %}
 {% else %}
   <div class="card" style="text-align: center;">
-    <p class="muted">No questions yet. Import a CSV or PDF to get started.</p>
+    <p class="muted">No questions yet. Import a CSV to get started.</p>
     <a class="btn btn-primary" href="{% url 'courses:import' course.pk %}" style="margin-top: 10px;">Import questions</a>
   </div>
 {% endif %}

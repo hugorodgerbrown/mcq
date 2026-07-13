@@ -74,38 +74,3 @@ class Question(models.Model):
 
     def __str__(self) -> str:
         return f"{self.code}: {self.text[:50]}"
-
-
-class PdfImportJob(models.Model):
-    """Tracks an asynchronous PDF → questions extraction for a course.
-
-    The long-running Claude work runs on Anthropic's Batch API; this row is the
-    state machine the client polls. Each poll advances quick control-plane steps
-    (submit a batch, check status, retrieve results) — no long inference call
-    ever blocks a request. `rows` holds the normalised, reviewable questions once
-    extraction finishes; `pdf_b64` is cleared as soon as the batches are done.
-    """
-
-    class Status(models.TextChoices):
-        OUTLINING = "outlining", "Outlining"  # stage-1 batch (topic split) submitted
-        EXTRACTING = "extracting", "Extracting"  # stage-2 batch (per-topic) submitted
-        READY = "ready", "Ready"  # extraction done, awaiting review + commit
-        COMMITTED = "committed", "Committed"
-        ERROR = "error", "Error"
-
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="pdf_import_jobs")
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OUTLINING)
-    filename = models.CharField(max_length=300, blank=True)
-    # Base64-encoded PDF, held only until both batches are submitted, then cleared.
-    pdf_b64 = models.TextField(blank=True)
-    outline_batch_id = models.CharField(max_length=100, blank=True)
-    extract_batch_id = models.CharField(max_length=100, blank=True)
-    outline = models.JSONField(default=dict, blank=True)  # stage-1 result
-    rows = models.JSONField(default=list, blank=True)  # normalised extracted rows
-    review = models.JSONField(default=list, blank=True)  # flagged (inferred/low-conf) questions
-    error = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        return f"PDF import {self.pk} ({self.status}) for {self.course_id}"

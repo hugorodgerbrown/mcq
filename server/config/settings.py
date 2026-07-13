@@ -93,14 +93,6 @@ EMAIL_BACKEND = _resolve_email_backend(
     DEBUG, os.environ, resend_key=RESEND_API_KEY, email_host=EMAIL_HOST
 )
 
-# Anthropic API key for the PDF-to-questions importer. Unset in dev/CI (the
-# importer only calls out when a PDF is actually submitted, and tests mock the
-# client), provided in production via the environment.
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-# Model + limits for the PDF importer, overridable via the environment.
-PDF_IMPORT_MODEL = os.environ.get("PDF_IMPORT_MODEL", "claude-opus-4-8")
-PDF_IMPORT_MAX_BYTES = int(os.environ.get("PDF_IMPORT_MAX_BYTES", str(20 * 1024 * 1024)))
-
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 
